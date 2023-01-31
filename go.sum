@@ -1,0 +1,4 @@
+github.com/KarpelesLab/pobj v0.0.1 h1:l3i4EAdTbVKTNZ/CYKPdJFjwc4GxMyuYSYBlvRGClwA=
+github.com/KarpelesLab/pobj v0.0.1/go.mod h1:rwPZbrUj7uB7Bu8MD+ml9s+yd+pmp2WOCJvumcFpweQ=
+github.com/KarpelesLab/webutil v0.1.0 h1:s3lAFw8HXChfyU1AcyJXqWStrDRwgbT/3Xwlq8gaB+w=
+github.com/KarpelesLab/webutil v0.1.0/go.mod h1:1UsHLjGbVRqUc1LbF5LXM968jllEZkxryqhqYesvZos=
