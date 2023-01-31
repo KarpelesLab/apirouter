@@ -2,9 +2,11 @@ package apirouter
 
 import (
 	"io/fs"
+	"net/http"
 	"strings"
 
 	"github.com/KarpelesLab/pobj"
+	"github.com/KarpelesLab/webutil"
 )
 
 func (c *Context) Call() (any, error) {
@@ -73,17 +75,54 @@ func (c *Context) Call() (any, error) {
 	}
 
 	if obj != nil {
-		return obj, nil
+		switch c.verb {
+		case "HEAD", "GET": // Fetch (default)
+			return obj, nil
+		case "PATCH": // Update
+			if res, ok := obj.(Updatable); ok {
+				err := res.ApiUpdate(c)
+				if err != nil {
+					return nil, err
+				}
+				return obj, nil
+			}
+			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+		case "DELETE": // Delete
+			if res, ok := obj.(Deletable); ok {
+				err := res.ApiDelete(c)
+				if err != nil {
+					return nil, err
+				}
+				return obj, nil
+			}
+			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+		default:
+			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+		}
 	}
 
 	// need to call list
 	if r.Action == nil {
 		return nil, fs.ErrNotExist
 	}
-	list := r.Action.List
-	if list == nil {
-		return nil, fs.ErrNotExist
-	}
 
-	return list.CallArg(c, nil)
+	switch c.verb {
+	case "HEAD", "GET": // List
+		if list := r.Action.List; list != nil {
+			return list.CallArg(c, nil)
+		}
+		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+	case "POST": // Create
+		if create := r.Action.Create; create != nil {
+			return create.CallArg(c, nil)
+		}
+		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+	case "DELETE": // Clear
+		if clear := r.Action.Clear; clear != nil {
+			return clear.CallArg(c, nil)
+		}
+		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+	default:
+		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+	}
 }
