@@ -121,6 +121,10 @@ func (c *Context) GetPath() string {
 	return c.path
 }
 
+func (c *Context) GetObject(typ string) any {
+	return c.objects[typ]
+}
+
 func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	c.req = req
 	c.rw = rw
