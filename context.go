@@ -43,6 +43,7 @@ func New(ctx context.Context, path, verb string) *Context {
 		verb:    verb,
 		objects: make(map[string]any),
 		flags:   make(map[string]bool),
+		extra:   make(map[string]any),
 	}
 
 	return res
@@ -55,6 +56,7 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 		verb:    req.Method,
 		objects: make(map[string]any),
 		flags:   make(map[string]bool),
+		extra:   make(map[string]any),
 	}
 
 	err := res.SetHttp(rw, req)
