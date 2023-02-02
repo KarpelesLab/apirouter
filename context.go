@@ -108,6 +108,10 @@ func (c *Context) GetParam(v string) any {
 	return res
 }
 
+func (c *Context) GetQuery(v string) any {
+	return c.get[v]
+}
+
 func (c *Context) GetParamTo(v string, obj any) bool {
 	// TODO
 	return false
