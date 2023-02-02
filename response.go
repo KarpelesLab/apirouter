@@ -134,6 +134,9 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 			return
 		case io.Reader:
 			_, err := io.Copy(rw, v)
+			if fc, ok := v.(io.Closer); ok {
+				fc.Close()
+			}
 			if err != nil {
 				webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
 			}
