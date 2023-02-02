@@ -27,6 +27,7 @@ type Context struct {
 	params map[string]any      // parameters passed from POST?
 	get    map[string]any      // GET parameters (used for _ctx, etc)
 	flags  map[string]bool     // flags, such as "raw" or "pretty"
+	extra  map[string]any      // extra values in response
 
 	objects map[string]any
 }
@@ -123,6 +124,14 @@ func (c *Context) SetPath(p string) {
 
 func (c *Context) GetPath() string {
 	return c.path
+}
+
+func (c *Context) SetExtraResponse(k string, v any) {
+	c.extra[k] = v
+}
+
+func (c *Context) GetExtraResponse(k string) any {
+	return c.extra[k]
 }
 
 func (c *Context) GetObject(typ string) any {

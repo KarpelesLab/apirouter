@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"log"
 	"net/http"
 	"net/url"
@@ -120,6 +121,9 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 			webutil.ErrorToHttpHandler(r.err).ServeHTTP(rw, req)
 			return
 		}
+		if mime, ok := r.ctx.extra["mime"].(string); ok {
+			rw.Header().Set("Content-Type", mime)
+		}
 
 		switch v := r.Data.(type) {
 		case string:
@@ -127,6 +131,12 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 			return
 		case []byte:
 			rw.Write(v)
+			return
+		case io.Reader:
+			_, err := io.Copy(rw, v)
+			if err != nil {
+				webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
+			}
 			return
 		default:
 			// encode to json
@@ -139,6 +149,7 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 			if err != nil {
 				webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
 			}
+			return
 		}
 	}
 
