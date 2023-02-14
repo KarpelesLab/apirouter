@@ -92,6 +92,30 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	r.serveWithContext(r.ctx, rw, req)
 }
 
+func (r *Response) getResponseData() any {
+	res := make(map[string]any)
+	if r.ctx.extra != nil {
+		for k, v := range r.ctx.extra {
+			res[k] = v
+		}
+	}
+	res["result"] = r.Result
+	if r.Error != "" {
+		res["error"] = r.Error
+		res["code"] = r.Code
+	}
+	res["time"] = r.Time
+	res["data"] = r.Data
+	if r.RedirectURL != nil {
+		res["redirect_url"] = r.RedirectURL
+		if r.RedirectCode != 0 {
+			res["redirect_code"] = r.RedirectCode
+		}
+	}
+
+	return res
+}
+
 //go:noinline
 func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
 	// check req for HTTP Query flags: raw & pretty
@@ -162,7 +186,8 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 	if pretty {
 		enc.SetIndent("", "    ")
 	}
-	err := enc.Encode(r)
+
+	err := enc.Encode(r.getResponseData())
 	if err != nil {
 		webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
 	}
