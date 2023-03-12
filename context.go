@@ -6,7 +6,6 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
-	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -79,15 +78,16 @@ func (c *Context) Value(v any) any {
 				}
 				return c.inputJson
 			}
-			if c.req.Body == nil {
+			if c.params == nil {
 				return nil
 			}
-			data, err := ioutil.ReadAll(&io.LimitedReader{R: c.req.Body, N: 16 * 1024 * 1024})
+			buf := &bytes.Buffer{}
+			enc := json.NewEncoder(buf)
+			err := enc.Encode(c.params)
 			if err != nil {
 				return nil
 			}
-			c.inputJson = data
-			c.req.Body = nil
+			c.inputJson = buf.Bytes()
 			if len(c.inputJson) == 0 {
 				return nil
 			}
