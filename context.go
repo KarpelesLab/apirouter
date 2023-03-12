@@ -6,6 +6,7 @@ import (
 	"encoding/json"
 	"errors"
 	"io"
+	"io/ioutil"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -29,7 +30,8 @@ type Context struct {
 	flags  map[string]bool     // flags, such as "raw" or "pretty"
 	extra  map[string]any      // extra values in response
 
-	objects map[string]any
+	objects   map[string]any
+	inputJson json.RawMessage
 }
 
 func New(ctx context.Context, path, verb string) *Context {
@@ -68,6 +70,30 @@ func (c *Context) Value(v any) any {
 	case **Context:
 		*k = c
 		return c
+	case string:
+		switch k {
+		case "input_json":
+			if c.inputJson != nil {
+				if len(c.inputJson) == 0 {
+					return nil
+				}
+				return c.inputJson
+			}
+			if c.req.Body == nil {
+				return nil
+			}
+			data, err := ioutil.ReadAll(&io.LimitedReader{R: c.req.Body, N: 16 * 1024 * 1024})
+			if err != nil {
+				return nil
+			}
+			c.inputJson = data
+			c.req.Body = nil
+			if len(c.inputJson) == 0 {
+				return nil
+			}
+			return c.inputJson
+		}
+		return c.Context.Value(v)
 	default:
 		return c.Context.Value(v)
 	}
