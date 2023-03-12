@@ -141,6 +141,10 @@ func (c *Context) GetQuery(v string) any {
 	return c.get[v]
 }
 
+func (c *Context) GetQueryFull() map[string]any {
+	return c.get
+}
+
 func (c *Context) GetParamTo(v string, obj any) bool {
 	// TODO
 	return false
