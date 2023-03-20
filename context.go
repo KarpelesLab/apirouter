@@ -30,7 +30,8 @@ type Context struct {
 	flags  map[string]bool     // flags, such as "raw" or "pretty"
 	extra  map[string]any      // extra values in response
 
-	objects map[string]any
+	objects   map[string]any
+	inputJson json.RawMessage
 }
 
 func New(ctx context.Context, path, verb string) *Context {
@@ -69,6 +70,31 @@ func (c *Context) Value(v any) any {
 	case **Context:
 		*k = c
 		return c
+	case string:
+		switch k {
+		case "input_json":
+			if c.inputJson != nil {
+				if len(c.inputJson) == 0 {
+					return nil
+				}
+				return c.inputJson
+			}
+			if c.params == nil {
+				return nil
+			}
+			buf := &bytes.Buffer{}
+			enc := json.NewEncoder(buf)
+			err := enc.Encode(c.params)
+			if err != nil {
+				return nil
+			}
+			c.inputJson = buf.Bytes()
+			if len(c.inputJson) == 0 {
+				return nil
+			}
+			return c.inputJson
+		}
+		return c.Context.Value(v)
 	default:
 		return c.Context.Value(v)
 	}
