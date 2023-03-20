@@ -93,6 +93,8 @@ func (c *Context) Value(v any) any {
 				return nil
 			}
 			return c.inputJson
+		case "domain":
+			return c.GetDomain()
 		}
 		return c.Context.Value(v)
 	default:
