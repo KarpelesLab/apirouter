@@ -93,6 +93,8 @@ func (c *Context) Value(v any) any {
 				return nil
 			}
 			return c.inputJson
+		case "http_request":
+			return c.req
 		case "domain":
 			return c.GetDomain()
 		}
