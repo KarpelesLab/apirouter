@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -142,6 +143,20 @@ func (c *Context) GetExtraResponse(k string) any {
 
 func (c *Context) GetObject(typ string) any {
 	return c.objects[typ]
+}
+
+func (c *Context) GetDomain() string {
+	// get domain for request
+	if c.req != nil {
+		// get from request
+		host, _, _ := net.SplitHostPort(c.req.Host)
+		if host != "" {
+			return host
+		}
+	}
+
+	// fallback
+	return "_default"
 }
 
 func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
