@@ -179,9 +179,12 @@ func (c *Context) GetDomain() string {
 	// get domain for request
 	if c.req != nil {
 		// get from request
-		host, _, _ := net.SplitHostPort(c.req.Host)
-		if host != "" {
-			return host
+		if c.req.Host != "" {
+			host, _, _ := net.SplitHostPort(c.req.Host)
+			if host != "" {
+				return host
+			}
+			return c.req.Host
 		}
 	}
 
