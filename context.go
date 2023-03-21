@@ -179,6 +179,12 @@ func (c *Context) GetDomain() string {
 	// get domain for request
 	if c.req != nil {
 		// get from request
+		if originalHost := c.req.Header.Get("Sec-Original-Host"); originalHost != "" {
+			if host, _, _ := net.SplitHostPort(originalHost); host != "" {
+				return host
+			}
+			return originalHost
+		}
 		if c.req.Host != "" {
 			host, _, _ := net.SplitHostPort(c.req.Host)
 			if host != "" {
