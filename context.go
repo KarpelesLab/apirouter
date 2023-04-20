@@ -229,6 +229,15 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if err != nil {
 				return err
 			}
+		} else {
+			// store body for optional future use
+			reader := io.LimitReader(body, int64(10<<20)+1) // 10MB
+			b, e := io.ReadAll(reader)
+			if e != nil {
+				return e
+			}
+			c.req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(b)), nil }
+			body, _ = c.req.GetBody()
 		}
 		reader := io.LimitReader(body, int64(10<<20)+1) // 10MB
 
