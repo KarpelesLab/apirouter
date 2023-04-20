@@ -18,3 +18,12 @@ func GetRequestBody(ctx context.Context) (io.ReadCloser, error) {
 	}
 	return req.GetBody()
 }
+
+// GetHeader returns the requested header or an empty string if not found
+func GetHeader(ctx context.Context, hdr string) string {
+	req, ok := ctx.Value("http_request").(*http.Request)
+	if !ok || req == nil {
+		return ""
+	}
+	return req.Header.Get(hdr)
+}
