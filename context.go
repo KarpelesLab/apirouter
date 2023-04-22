@@ -4,7 +4,6 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
-	"errors"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -331,7 +330,7 @@ func (c *Context) NewRequest(target string) (*http.Request, error) {
 	// target is for example http://localhost/_rest/, so it becomes http://localhost/_rest/A/B:c
 	if target == "" {
 		if c.req == nil {
-			return nil, errors.New("missing target")
+			return nil, ErrTargetMissing
 		}
 		target = (&url.URL{Scheme: c.req.URL.Scheme, Host: c.req.URL.Host}).String()
 	}

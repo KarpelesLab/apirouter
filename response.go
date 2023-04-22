@@ -18,6 +18,7 @@ import (
 type Response struct {
 	Result       string   `json:"result"` // error|success|redirect
 	Error        string   `json:"error,omitempty"`
+	Token        string   `json:"token,omitempty"`
 	Code         int      `json:"code,omitempty"`
 	Time         float64  `json:"time"`
 	Data         any      `json:"data"`
@@ -74,6 +75,9 @@ func (c *Context) Response() (res *Response, err error) {
 			Time:   float64(time.Since(start)) / float64(time.Second),
 			err:    err,
 			ctx:    c,
+		}
+		if obj, ok := err.(*Error); ok {
+			res.Token = obj.Token
 		}
 		return
 	}
