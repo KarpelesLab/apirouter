@@ -182,6 +182,9 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 
 	// send response normally
 	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+	if r.Code != 0 {
+		rw.WriteHeader(r.Code)
+	}
 	enc := json.NewEncoder(rw)
 	if pretty {
 		enc.SetIndent("", "    ")
