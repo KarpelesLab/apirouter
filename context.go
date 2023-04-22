@@ -8,6 +8,7 @@ import (
 	"io"
 	"mime"
 	"mime/multipart"
+	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -92,6 +93,10 @@ func (c *Context) Value(v any) any {
 				return nil
 			}
 			return c.inputJson
+		case "http_request":
+			return c.req
+		case "domain":
+			return c.GetDomain()
 		}
 		return c.Context.Value(v)
 	default:
@@ -170,6 +175,29 @@ func (c *Context) GetObject(typ string) any {
 	return c.objects[typ]
 }
 
+func (c *Context) GetDomain() string {
+	// get domain for request
+	if c.req != nil {
+		// get from request
+		if originalHost := c.req.Header.Get("Sec-Original-Host"); originalHost != "" {
+			if host, _, _ := net.SplitHostPort(originalHost); host != "" {
+				return host
+			}
+			return originalHost
+		}
+		if c.req.Host != "" {
+			host, _, _ := net.SplitHostPort(c.req.Host)
+			if host != "" {
+				return host
+			}
+			return c.req.Host
+		}
+	}
+
+	// fallback
+	return "_default"
+}
+
 func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	c.req = req
 	c.rw = rw
@@ -201,6 +229,15 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if err != nil {
 				return err
 			}
+		} else {
+			// store body for optional future use
+			reader := io.LimitReader(body, int64(10<<20)+1) // 10MB
+			b, e := io.ReadAll(reader)
+			if e != nil {
+				return e
+			}
+			c.req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(b)), nil }
+			body, _ = c.req.GetBody()
 		}
 		reader := io.LimitReader(body, int64(10<<20)+1) // 10MB
 
