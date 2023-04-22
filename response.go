@@ -123,6 +123,9 @@ func (r *Response) getResponseData() any {
 			res["redirect_code"] = r.RedirectCode
 		}
 	}
+	if r.Token != "" {
+		res["token"] = r.Token
+	}
 
 	return res
 }
