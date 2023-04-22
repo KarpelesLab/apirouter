@@ -78,6 +78,13 @@ func (c *Context) Response() (res *Response, err error) {
 		return
 	}
 
+	if obj, ok := val.(*Response); ok {
+		// already a response object
+		res.Time = float64(time.Since(start)) / float64(time.Second)
+		res = obj
+		return
+	}
+
 	res = &Response{
 		Result: "success",
 		Code:   code,
