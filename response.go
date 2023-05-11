@@ -20,6 +20,7 @@ type Response struct {
 	Error        string   `json:"error,omitempty"`
 	Token        string   `json:"token,omitempty"`
 	Code         int      `json:"code,omitempty"`
+	Debug        string   `json:"debug,omitempty"`
 	Time         float64  `json:"time"`
 	Data         any      `json:"data"`
 	RedirectURL  *url.URL `json:"redirect_url,omitempty"`
@@ -33,12 +34,13 @@ func (c *Context) Response() (res *Response, err error) {
 
 	defer func() {
 		if e := recover(); e != nil {
-			log.Printf("[api] panic in %s: %s", c.path, e)
-			debug.PrintStack()
+			stack := debug.Stack()
+			log.Printf("[api] panic in %s: %s\nStack\n%s", c.path, e, stack)
 			res = &Response{
 				Result: "error",
 				Error:  fmt.Sprintf("panic: %s", e),
 				Code:   http.StatusInternalServerError,
+				Debug:  string(stack),
 				Time:   float64(time.Since(start)) / float64(time.Second),
 				err:    fmt.Errorf("panic: %s", err),
 				ctx:    c,
