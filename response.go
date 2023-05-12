@@ -21,6 +21,7 @@ type Response struct {
 	Token        string   `json:"token,omitempty"`
 	Code         int      `json:"code,omitempty"`
 	Debug        string   `json:"debug,omitempty"`
+	RequestId    string   `json:"reqèest_id,omitempty"`
 	Time         float64  `json:"time"`
 	Data         any      `json:"data"`
 	RedirectURL  *url.URL `json:"redirect_url,omitempty"`
@@ -37,17 +38,22 @@ func (c *Context) Response() (res *Response, err error) {
 			stack := debug.Stack()
 			log.Printf("[api] panic in %s: %s\nStack\n%s", c.path, e, stack)
 			res = &Response{
-				Result: "error",
-				Error:  fmt.Sprintf("panic: %s", e),
-				Code:   http.StatusInternalServerError,
-				Debug:  string(stack),
-				Time:   float64(time.Since(start)) / float64(time.Second),
-				err:    fmt.Errorf("panic: %s", err),
-				ctx:    c,
+				Result:    "error",
+				Error:     fmt.Sprintf("panic: %s", e),
+				Code:      http.StatusInternalServerError,
+				Debug:     string(stack),
+				Time:      float64(time.Since(start)) / float64(time.Second),
+				RequestId: c.reqid,
+				err:       fmt.Errorf("panic: %s", err),
+				ctx:       c,
 			}
 			err = fmt.Errorf("panic: %s", err)
 		}
 	}()
+
+	for _, h := range RequestHooks {
+		h(c)
+	}
 
 	code := http.StatusOK
 	var val any
@@ -64,22 +70,30 @@ func (c *Context) Response() (res *Response, err error) {
 				RedirectURL:  e.URL,
 				RedirectCode: e.Code,
 				Time:         float64(time.Since(start)) / float64(time.Second),
+				RequestId:    c.reqid,
 				err:          e,
 				ctx:          c,
+			}
+			for _, h := range ResponseHooks {
+				h(res)
 			}
 			return
 		}
 
 		res = &Response{
-			Result: "error",
-			Error:  err.Error(),
-			Code:   code,
-			Time:   float64(time.Since(start)) / float64(time.Second),
-			err:    err,
-			ctx:    c,
+			Result:    "error",
+			Error:     err.Error(),
+			Code:      code,
+			Time:      float64(time.Since(start)) / float64(time.Second),
+			RequestId: c.reqid,
+			err:       err,
+			ctx:       c,
 		}
 		if obj, ok := err.(*Error); ok {
 			res.Token = obj.Token
+		}
+		for _, h := range ResponseHooks {
+			h(res)
 		}
 		return
 	}
@@ -88,15 +102,22 @@ func (c *Context) Response() (res *Response, err error) {
 		// already a response object
 		res.Time = float64(time.Since(start)) / float64(time.Second)
 		res = obj
+		for _, h := range ResponseHooks {
+			h(res)
+		}
 		return
 	}
 
 	res = &Response{
-		Result: "success",
-		Code:   code,
-		Time:   float64(time.Since(start)) / float64(time.Second),
-		Data:   val,
-		ctx:    c,
+		Result:    "success",
+		Code:      code,
+		Time:      float64(time.Since(start)) / float64(time.Second),
+		RequestId: c.reqid,
+		Data:      val,
+		ctx:       c,
+	}
+	for _, h := range ResponseHooks {
+		h(res)
 	}
 	return
 }

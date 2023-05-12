@@ -14,13 +14,15 @@ import (
 	"strings"
 
 	"github.com/KarpelesLab/webutil"
+	"github.com/google/uuid"
 )
 
 type Context struct {
 	context.Context
 
-	path string // eg. "A/b:c"
-	verb string // "GET", etc
+	path  string // eg. "A/b:c"
+	verb  string // "GET", etc
+	reqid string // request ID
 
 	req    *http.Request       // can be nil
 	rw     http.ResponseWriter // can be nil
@@ -45,6 +47,7 @@ func New(ctx context.Context, path, verb string) *Context {
 		objects: make(map[string]any),
 		flags:   make(map[string]bool),
 		extra:   make(map[string]any),
+		reqid:   uuid.Must(uuid.NewRandom()).String(),
 	}
 
 	return res
@@ -58,6 +61,7 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 		objects: make(map[string]any),
 		flags:   make(map[string]bool),
 		extra:   make(map[string]any),
+		reqid:   uuid.Must(uuid.NewRandom()).String(),
 	}
 
 	err := res.SetHttp(rw, req)
@@ -96,6 +100,8 @@ func (c *Context) Value(v any) any {
 			return c.req
 		case "domain":
 			return c.GetDomain()
+		case "request_id":
+			return c.reqid
 		}
 		return c.Context.Value(v)
 	default:
@@ -172,6 +178,10 @@ func (c *Context) GetExtraResponse(k string) any {
 
 func (c *Context) GetObject(typ string) any {
 	return c.objects[typ]
+}
+
+func (c *Context) RequestId() string {
+	return c.reqid
 }
 
 func (c *Context) GetDomain() string {
