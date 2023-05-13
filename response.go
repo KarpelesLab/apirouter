@@ -21,7 +21,7 @@ type Response struct {
 	Token        string   `json:"token,omitempty"`
 	Code         int      `json:"code,omitempty"`
 	Debug        string   `json:"debug,omitempty"`
-	RequestId    string   `json:"reqèest_id,omitempty"`
+	RequestId    string   `json:"request_id,omitempty"`
 	Time         float64  `json:"time"`
 	Data         any      `json:"data"`
 	RedirectURL  *url.URL `json:"redirect_url,omitempty"`
