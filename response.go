@@ -52,7 +52,9 @@ func (c *Context) Response() (res *Response, err error) {
 	}()
 
 	for _, h := range RequestHooks {
-		h(c)
+		if err := h(c); err != nil {
+			return nil, err
+		}
 	}
 
 	code := http.StatusOK
@@ -93,7 +95,9 @@ func (c *Context) Response() (res *Response, err error) {
 			res.Token = obj.Token
 		}
 		for _, h := range ResponseHooks {
-			h(res)
+			if err := h(res); err != nil {
+				return nil, err
+			}
 		}
 		return
 	}
