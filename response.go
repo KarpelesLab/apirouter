@@ -30,6 +30,39 @@ type Response struct {
 	ctx          *Context
 }
 
+func (c *Context) errorResponse(start time.Time, err error) *Response {
+	code := webutil.HTTPStatus(err)
+	if code == 0 {
+		code = http.StatusInternalServerError
+	}
+	if e, ok := err.(*webutil.Redirect); ok {
+		res := &Response{
+			Result:       "redirect",
+			RedirectURL:  e.URL,
+			RedirectCode: e.Code,
+			Time:         float64(time.Since(start)) / float64(time.Second),
+			RequestId:    c.reqid,
+			err:          e,
+			ctx:          c,
+		}
+		return res
+	}
+
+	res := &Response{
+		Result:    "error",
+		Error:     err.Error(),
+		Code:      code,
+		Time:      float64(time.Since(start)) / float64(time.Second),
+		RequestId: c.reqid,
+		err:       err,
+		ctx:       c,
+	}
+	if obj, ok := err.(*Error); ok {
+		res.Token = obj.Token
+	}
+	return res
+}
+
 func (c *Context) Response() (res *Response, err error) {
 	start := time.Now()
 
@@ -52,8 +85,9 @@ func (c *Context) Response() (res *Response, err error) {
 	}()
 
 	for _, h := range RequestHooks {
-		if err := h(c); err != nil {
-			return nil, err
+		if err = h(c); err != nil {
+			res = c.errorResponse(start, err)
+			return
 		}
 	}
 
@@ -62,38 +96,7 @@ func (c *Context) Response() (res *Response, err error) {
 	val, err = c.Call() // perform the actual call
 
 	if err != nil {
-		code = webutil.HTTPStatus(err)
-		if code == 0 {
-			code = http.StatusInternalServerError
-		}
-		if e, ok := err.(*webutil.Redirect); ok {
-			res = &Response{
-				Result:       "redirect",
-				RedirectURL:  e.URL,
-				RedirectCode: e.Code,
-				Time:         float64(time.Since(start)) / float64(time.Second),
-				RequestId:    c.reqid,
-				err:          e,
-				ctx:          c,
-			}
-			for _, h := range ResponseHooks {
-				h(res)
-			}
-			return
-		}
-
-		res = &Response{
-			Result:    "error",
-			Error:     err.Error(),
-			Code:      code,
-			Time:      float64(time.Since(start)) / float64(time.Second),
-			RequestId: c.reqid,
-			err:       err,
-			ctx:       c,
-		}
-		if obj, ok := err.(*Error); ok {
-			res.Token = obj.Token
-		}
+		res = c.errorResponse(start, err)
 		for _, h := range ResponseHooks {
 			if err := h(res); err != nil {
 				return nil, err
