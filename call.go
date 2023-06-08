@@ -78,6 +78,9 @@ func (c *Context) Call() (any, error) {
 		switch c.verb {
 		case "HEAD", "GET": // Fetch (default)
 			return obj, nil
+		case "OPTIONS":
+			c.flags["raw"] = true
+			return nil, &optionsResponder{}
 		case "PATCH": // Update
 			if res, ok := obj.(Updatable); ok {
 				err := res.ApiUpdate(c)
@@ -112,6 +115,9 @@ func (c *Context) Call() (any, error) {
 			return list.CallArg(c, nil)
 		}
 		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+	case "OPTIONS":
+		c.flags["raw"] = true
+		return nil, &optionsResponder{}
 	case "POST": // Create
 		if create := r.Action.Create; create != nil {
 			return create.CallArg(c, nil)
