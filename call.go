@@ -71,7 +71,14 @@ func (c *Context) Call() (any, error) {
 		if meth == nil {
 			return nil, fs.ErrNotExist
 		}
-		return meth.Call(c)
+		switch c.verb {
+		case "HEAD", "GET", "POST":
+			return meth.Call(c)
+		case "OPTIONS":
+			return nil, &optionsResponder{[]string{"GET", "POST", "HEAD", "OPTIONS"}}
+		default:
+			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
+		}
 	}
 
 	if obj != nil {

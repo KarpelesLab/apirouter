@@ -2,6 +2,7 @@ package apirouter
 
 import (
 	"net/http"
+	"strings"
 
 	"github.com/KarpelesLab/webutil"
 )
@@ -18,16 +19,25 @@ func HTTP(rw http.ResponseWriter, req *http.Request) {
 	res.ServeHTTP(rw, req)
 }
 
-type optionsResponder struct{}
+type optionsResponder struct {
+	allowedMethods []string
+}
 
 func (o *optionsResponder) Error() string {
 	return "Options responder"
+}
+
+func (o *optionsResponder) getAllowedMethods() string {
+	if o.allowedMethods == nil {
+		return "POST, GET, OPTIONS, PUT, DELETE, PATCH"
+	}
+	return strings.Join(o.allowedMethods, ", ")
 }
 
 func (o *optionsResponder) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// set headers, return no body
 	rw.Header().Set("Access-Control-Allow-Headers", "Authorization, Content-Type")
 	rw.Header().Set("Access-Control-Max-Age", "86400")
-	rw.Header().Set("Access-Control-Allow-Methods", "POST, GET, OPTIONS, PUT, DELETE, PATCH")
+	rw.Header().Set("Access-Control-Allow-Methods", o.getAllowedMethods())
 	rw.WriteHeader(http.StatusNoContent)
 }
