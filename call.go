@@ -75,6 +75,7 @@ func (c *Context) Call() (any, error) {
 		case "HEAD", "GET", "POST":
 			return meth.Call(c)
 		case "OPTIONS":
+			c.flags["raw"] = true
 			return nil, &optionsResponder{[]string{"GET", "POST", "HEAD", "OPTIONS"}}
 		default:
 			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
