@@ -18,6 +18,7 @@ func (c *Context) Call() (any, error) {
 	r := pobj.Root()
 	m := ""
 	method := false
+	corsReq := c.verb == "OPTIONS"
 	var obj any
 
 	if pos := strings.LastIndexByte(p, ':'); pos != -1 {
@@ -54,6 +55,11 @@ func (c *Context) Call() (any, error) {
 		if get == nil {
 			return nil, fs.ErrNotExist
 		}
+		if corsReq {
+			// ignore loading ID if in cors req
+			obj = true
+			continue
+		}
 
 		res, err := get.CallArg(c, struct{ Id string }{Id: s})
 		if err != nil {
@@ -88,7 +94,7 @@ func (c *Context) Call() (any, error) {
 			return obj, nil
 		case "OPTIONS":
 			c.flags["raw"] = true
-			return nil, &optionsResponder{}
+			return nil, &optionsResponder{[]string{"GET", "HEAD", "OPTIONS", "PATCH", "DELETE"}}
 		case "PATCH": // Update
 			if res, ok := obj.(Updatable); ok {
 				err := res.ApiUpdate(c)
@@ -125,7 +131,7 @@ func (c *Context) Call() (any, error) {
 		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 	case "OPTIONS":
 		c.flags["raw"] = true
-		return nil, &optionsResponder{}
+		return nil, &optionsResponder{[]string{"GET", "HEAD", "OPTIONS", "POST", "DELETE"}}
 	case "POST": // Create
 		if create := r.Action.Create; create != nil {
 			return create.CallArg(c, nil)
