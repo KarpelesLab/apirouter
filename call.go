@@ -48,6 +48,10 @@ func (c *Context) Call() (any, error) {
 		}
 
 		// attempt to load as ID
+		if obj != nil {
+			// you can't have Object/id/id_again
+			return nil, fs.ErrNotExist
+		}
 		if r.Action == nil {
 			return nil, fs.ErrNotExist
 		}
