@@ -72,6 +72,10 @@ func (c *Context) Call() (any, error) {
 
 	// ok we need to return a class
 	if method {
+		if corsReq {
+			c.flags["raw"] = true
+			return nil, &optionsResponder{[]string{"GET", "POST", "HEAD", "OPTIONS"}}
+		}
 		// ok we need to call a static method
 		meth := r.Static(m)
 		if meth == nil {
@@ -80,21 +84,19 @@ func (c *Context) Call() (any, error) {
 		switch c.verb {
 		case "HEAD", "GET", "POST":
 			return meth.Call(c)
-		case "OPTIONS":
-			c.flags["raw"] = true
-			return nil, &optionsResponder{[]string{"GET", "POST", "HEAD", "OPTIONS"}}
 		default:
 			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 		}
 	}
 
 	if obj != nil {
+		if corsReq {
+			c.flags["raw"] = true
+			return nil, &optionsResponder{[]string{"GET", "HEAD", "OPTIONS", "PATCH", "DELETE"}}
+		}
 		switch c.verb {
 		case "HEAD", "GET": // Fetch (default)
 			return obj, nil
-		case "OPTIONS":
-			c.flags["raw"] = true
-			return nil, &optionsResponder{[]string{"GET", "HEAD", "OPTIONS", "PATCH", "DELETE"}}
 		case "PATCH": // Update
 			if res, ok := obj.(Updatable); ok {
 				err := res.ApiUpdate(c)
@@ -123,15 +125,17 @@ func (c *Context) Call() (any, error) {
 		return nil, fs.ErrNotExist
 	}
 
+	if corsReq {
+		c.flags["raw"] = true
+		return nil, &optionsResponder{[]string{"GET", "HEAD", "OPTIONS", "POST", "DELETE"}}
+	}
+
 	switch c.verb {
 	case "HEAD", "GET": // List
 		if list := r.Action.List; list != nil {
 			return list.CallArg(c, nil)
 		}
 		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
-	case "OPTIONS":
-		c.flags["raw"] = true
-		return nil, &optionsResponder{[]string{"GET", "HEAD", "OPTIONS", "POST", "DELETE"}}
 	case "POST": // Create
 		if create := r.Action.Create; create != nil {
 			return create.CallArg(c, nil)
