@@ -180,6 +180,19 @@ func (c *Context) GetObject(typ string) any {
 	return c.objects[typ]
 }
 
+func GetObject[T any](ctx context.Context, typ string) *T {
+	var c *Context
+	ctx.Value(&c)
+	if c == nil {
+		return nil
+	}
+	v, ok := c.objects[typ].(*T)
+	if ok {
+		return v
+	}
+	return nil
+}
+
 func (c *Context) RequestId() string {
 	return c.reqid
 }
