@@ -1,6 +1,9 @@
 package apirouter
 
-import "errors"
+import (
+	"errors"
+	"net/http"
+)
 
 type Error struct {
 	Message string // error message
@@ -9,7 +12,11 @@ type Error struct {
 }
 
 var (
-	ErrTargetMissing = errors.New("missing target")
+	ErrTargetMissing   = errors.New("missing target")
+	ErrAccessDenied    = &Error{Message: "Access denied", Token: "error_access_denied", Code: http.StatusForbidden}
+	ErrInternal        = &Error{Message: "An internal error occured", Token: "error_internal", Code: http.StatusInternalServerError}
+	ErrInsecureRequest = &Error{Message: "Request must use POST and have the appropriate tokens", Token: "error_insecure_request", Code: http.StatusBadRequest}
+	ErrTeapot          = &Error{Message: "A teapot has appeared", Token: "error_teapot", Code: http.StatusTeapot}
 )
 
 func (e *Error) Error() string {

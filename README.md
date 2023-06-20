@@ -2,3 +2,6 @@
 
 # API router
 
+# Returning errors
+
+When returning an error, it is good practice to use the Error object.

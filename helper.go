@@ -27,3 +27,18 @@ func GetHeader(ctx context.Context, hdr string) string {
 	}
 	return req.Header.Get(hdr)
 }
+
+// SecurePost ensures request was a POST request and has the required headers
+func SecurePost(ctx context.Context) error {
+	req, ok := ctx.Value("http_request").(*http.Request)
+	if !ok || req == nil {
+		return ErrInsecureRequest
+	}
+	if req.Method != "POST" {
+		return ErrInsecureRequest
+	}
+	if req.Header.Get("Sec-Csrf-Token") != "valid" {
+		return ErrInsecureRequest
+	}
+	return nil
+}
