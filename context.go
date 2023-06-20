@@ -169,7 +169,7 @@ func (c *Context) GetParam(v string) any {
 	return res
 }
 
-func GetParam[T any](ctx context.Context, v string) T {
+func GetParam[T any](ctx context.Context, v string) (T, bool) {
 	// use the pointer to nil → elem method to have the typ corresponding to T
 	typ := reflect.TypeOf((*T)(nil)).Elem()
 
@@ -177,25 +177,25 @@ func GetParam[T any](ctx context.Context, v string) T {
 	ctx.Value(&c)
 
 	if c == nil {
-		return reflect.Zero(typ).Interface().(T)
+		return reflect.Zero(typ).Interface().(T), false
 	}
 
 	res := c.GetParam(v)
 	if res == nil {
 		// not found, return empty value
-		return reflect.Zero(typ).Interface().(T)
+		return reflect.Zero(typ).Interface().(T), false
 	}
 	// easy path, can be returned as is
 	if rv, ok := res.(T); ok {
-		return rv
+		return rv, true
 	}
 	// attempt to convert using reflect's convert (can convert float to int, etc)
 	vres := reflect.ValueOf(res)
 	if vres.CanConvert(typ) {
-		return vres.Convert(typ).Interface().(T)
+		return vres.Convert(typ).Interface().(T), true
 	}
 	// failed to read, return zero
-	return reflect.Zero(typ).Interface().(T)
+	return reflect.Zero(typ).Interface().(T), false
 }
 
 func (c *Context) GetQuery(v string) any {
