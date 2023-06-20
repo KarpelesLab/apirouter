@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"net/url"
 	"path"
+	"reflect"
 	"strings"
 
 	"github.com/KarpelesLab/webutil"
@@ -33,6 +34,8 @@ type Context struct {
 
 	objects   map[string]any
 	inputJson json.RawMessage
+	user      any  // associated user object
+	csrfOk    bool // is csrf token OK?
 }
 
 func New(ctx context.Context, path, verb string) *Context {
@@ -100,6 +103,8 @@ func (c *Context) Value(v any) any {
 			return c.req
 		case "domain":
 			return c.GetDomain()
+		case "user_object":
+			return c.user
 		case "request_id":
 			return c.reqid
 		}
@@ -109,10 +114,24 @@ func (c *Context) Value(v any) any {
 	}
 }
 
+// SetUser sets the user object for the associated context, which can be fetched with
+// GetUser[T](ctx). This method will typically be called in a RequestHook.
+func (c *Context) SetUser(user any) {
+	c.user = user
+}
+
+// SetCsrfValidated is to be used in request hook to tell apirouter if the request came with
+// a valid and appropriate CSRF token.
+func (c *Context) SetCsrfValidated(ok bool) {
+	c.csrfOk = ok
+}
+
+// SetParams sets the params passed to the API
 func (c *Context) SetParams(v map[string]any) {
 	c.params = v
 }
 
+// SetParam allows setting one individual parameter to the request
 func (c *Context) SetParam(name string, v any) {
 	if c.params == nil {
 		c.params = make(map[string]any)
@@ -120,10 +139,13 @@ func (c *Context) SetParam(name string, v any) {
 	c.params[name] = v
 }
 
-func (c *Context) GetParams() any {
+// GetParams returns all the parameters associated with this request
+func (c *Context) GetParams() map[string]any {
 	return c.params
 }
 
+// GetParam returns one individual value from the current parameters, and can
+// lookup valuyes in submaps/etc by adding a dot between values.
 func (c *Context) GetParam(v string) any {
 	if v == "" {
 		return c.params
@@ -145,6 +167,35 @@ func (c *Context) GetParam(v string) any {
 		}
 	}
 	return res
+}
+
+func GetParam[T any](ctx context.Context, v string) T {
+	// use the pointer to nil → elem method to have the typ corresponding to T
+	typ := reflect.TypeOf((*T)(nil)).Elem()
+
+	var c *Context
+	ctx.Value(&c)
+
+	if c == nil {
+		return reflect.Zero(typ).Interface().(T)
+	}
+
+	res := c.GetParam(v)
+	if res == nil {
+		// not found, return empty value
+		return reflect.Zero(typ).Interface().(T)
+	}
+	// easy path, can be returned as is
+	if rv, ok := res.(T); ok {
+		return rv
+	}
+	// attempt to convert using reflect's convert (can convert float to int, etc)
+	vres := reflect.ValueOf(res)
+	if vres.CanConvert(typ) {
+		return vres.Convert(typ).Interface().(T)
+	}
+	// failed to read, return zero
+	return reflect.Zero(typ).Interface().(T)
 }
 
 func (c *Context) GetQuery(v string) any {
