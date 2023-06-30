@@ -1,3 +1,5 @@
+github.com/KarpelesLab/pjson v0.1.1 h1:/95RVzwNupR2+S2TEFEPf66H+TtdNjepf/wDobcQml0=
+github.com/KarpelesLab/pjson v0.1.1/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/pobj v0.0.1 h1:l3i4EAdTbVKTNZ/CYKPdJFjwc4GxMyuYSYBlvRGClwA=
 github.com/KarpelesLab/pobj v0.0.1/go.mod h1:rwPZbrUj7uB7Bu8MD+ml9s+yd+pmp2WOCJvumcFpweQ=
 github.com/KarpelesLab/pobj v0.0.2 h1:S6drkfbRX9HwKER/2nIWxAVmkHJybb6yTFlYQhD1FXI=

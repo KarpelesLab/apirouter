@@ -2,7 +2,6 @@ package apirouter
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -12,6 +11,7 @@ import (
 	"runtime/debug"
 	"time"
 
+	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/webutil"
 )
 
@@ -212,7 +212,7 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 		default:
 			// encode to json
 			rw.Header().Set("Content-Type", "application/json; charset=utf-8")
-			enc := json.NewEncoder(rw)
+			enc := pjson.NewEncoderContext(r.ctx, rw)
 			if pretty {
 				enc.SetIndent("", "    ")
 			}
@@ -229,7 +229,7 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 	if r.Code != 0 {
 		rw.WriteHeader(r.Code)
 	}
-	enc := json.NewEncoder(rw)
+	enc := pjson.NewEncoderContext(r.ctx, rw)
 	if pretty {
 		enc.SetIndent("", "    ")
 	}

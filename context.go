@@ -3,7 +3,6 @@ package apirouter
 import (
 	"bytes"
 	"context"
-	"encoding/json"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -14,6 +13,7 @@ import (
 	"reflect"
 	"strings"
 
+	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/webutil"
 	"github.com/google/uuid"
 )
@@ -33,7 +33,7 @@ type Context struct {
 	extra  map[string]any      // extra values in response
 
 	objects   map[string]any
-	inputJson json.RawMessage
+	inputJson pjson.RawMessage
 	user      any  // associated user object
 	csrfOk    bool // is csrf token OK?
 }
@@ -89,7 +89,7 @@ func (c *Context) Value(v any) any {
 				return nil
 			}
 			buf := &bytes.Buffer{}
-			enc := json.NewEncoder(buf)
+			enc := pjson.NewEncoderContext(c, buf)
 			err := enc.Encode(c.params)
 			if err != nil {
 				return nil
@@ -317,7 +317,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		switch ct {
 		case "application/json":
 			// parse json
-			dec := json.NewDecoder(reader)
+			dec := pjson.NewDecoder(reader)
 			dec.UseNumber()
 			return dec.Decode(&c.params)
 		case "application/x-www-form-urlencoded":
@@ -330,7 +330,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter
 				if v, ok := v.(string); ok {
-					return json.Unmarshal([]byte(v), &c.params)
+					return pjson.Unmarshal([]byte(v), &c.params)
 				}
 			}
 			c.params = p
@@ -378,7 +378,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter
 				if v, ok := v.(string); ok {
-					return json.Unmarshal([]byte(v), &c.params)
+					return pjson.Unmarshal([]byte(v), &c.params)
 				}
 			}
 			c.params = p
@@ -393,7 +393,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	if v, ok := c.get["_"]; ok {
 		// _ contains json data, and overwrites any other parameter
 		if v, ok := v.(string); ok {
-			return json.Unmarshal([]byte(v), &c.params)
+			return pjson.Unmarshal([]byte(v), &c.params)
 		}
 	}
 	return nil
@@ -414,7 +414,7 @@ func (c *Context) NewRequest(target string) (*http.Request, error) {
 	headers := make(http.Header)
 
 	if c.params != nil {
-		js, err := json.Marshal(c.params)
+		js, err := pjson.MarshalContext(c, c.params)
 		if err != nil {
 			return nil, err
 		}
