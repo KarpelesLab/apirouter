@@ -79,26 +79,7 @@ func (c *Context) Value(v any) any {
 	case string:
 		switch k {
 		case "input_json":
-			if c.inputJson != nil {
-				if len(c.inputJson) == 0 {
-					return nil
-				}
-				return c.inputJson
-			}
-			if c.params == nil {
-				return nil
-			}
-			buf := &bytes.Buffer{}
-			enc := pjson.NewEncoderContext(c, buf)
-			err := enc.Encode(c.params)
-			if err != nil {
-				return nil
-			}
-			c.inputJson = buf.Bytes()
-			if len(c.inputJson) == 0 {
-				return nil
-			}
-			return c.inputJson
+			return c.getInputJson()
 		case "http_request":
 			return c.req
 		case "domain":
@@ -242,15 +223,6 @@ func GetObject[T any](ctx context.Context, typ string) *T {
 		return v
 	}
 	return nil
-}
-
-func GetInputJSON[T ~[]byte](ctx context.Context) T {
-	var c *Context
-	ctx.Value(&c)
-	if c == nil {
-		return nil
-	}
-	return T(c.inputJson)
 }
 
 func (c *Context) RequestId() string {
