@@ -244,6 +244,15 @@ func GetObject[T any](ctx context.Context, typ string) *T {
 	return nil
 }
 
+func GetInputJSON[T ~[]byte](ctx context.Context) T {
+	var c *Context
+	ctx.Value(&c)
+	if c == nil {
+		return nil
+	}
+	return T(c.inputJson)
+}
+
 func (c *Context) RequestId() string {
 	return c.reqid
 }
