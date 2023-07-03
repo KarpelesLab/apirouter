@@ -160,6 +160,10 @@ func (r *Response) getResponseData() any {
 	return res
 }
 
+func (r *Response) GetContext() *Context {
+	return r.ctx
+}
+
 //go:noinline
 func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
 	// check req for HTTP Query flags: raw & pretty
