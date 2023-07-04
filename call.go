@@ -137,17 +137,17 @@ func (c *Context) Call() (any, error) {
 	switch c.verb {
 	case "HEAD", "GET": // List
 		if list := r.Action.List; list != nil {
-			return list.CallArg(c, nil)
+			return list.CallArg(c, c.params)
 		}
 		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 	case "POST": // Create
 		if create := r.Action.Create; create != nil {
-			return create.CallArg(c, nil)
+			return create.CallArg(c, c.params)
 		}
 		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 	case "DELETE": // Clear
 		if clear := r.Action.Clear; clear != nil {
-			return clear.CallArg(c, nil)
+			return clear.CallArg(c, c.params)
 		}
 		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 	default:
