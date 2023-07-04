@@ -395,6 +395,9 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		if v, ok := v.(string); ok {
 			return pjson.Unmarshal([]byte(v), &c.params)
 		}
+	} else {
+		// fallback to this
+		c.params = c.get
 	}
 	return nil
 }
