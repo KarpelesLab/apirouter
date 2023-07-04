@@ -237,7 +237,7 @@ func GetObject[T any](ctx context.Context, typ string) *T {
 	if c == nil {
 		return nil
 	}
-	v, ok := c.objects[typ].(*T)
+	v, ok := c.GetObject(typ).(*T)
 	if ok {
 		return v
 	}
