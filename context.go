@@ -14,6 +14,7 @@ import (
 	"strings"
 
 	"github.com/KarpelesLab/pjson"
+	"github.com/KarpelesLab/pobj"
 	"github.com/KarpelesLab/webutil"
 	"github.com/google/uuid"
 )
@@ -209,7 +210,25 @@ func (c *Context) GetExtraResponse(k string) any {
 }
 
 func (c *Context) GetObject(typ string) any {
-	return c.objects[typ]
+	obj, ok := c.objects[typ]
+	if ok {
+		return obj
+	}
+	o := pobj.Get(typ)
+	if o == nil {
+		return nil
+	}
+	paramName := strings.ReplaceAll(typ, "/", "_") + "__"
+	id, ok := c.GetParam(paramName).(string)
+	if !ok {
+		return nil
+	}
+	res, _ := o.ById(c, id)
+	if res != nil {
+		// cache result
+		c.objects[typ] = res
+	}
+	return res
 }
 
 func GetObject[T any](ctx context.Context, typ string) *T {
