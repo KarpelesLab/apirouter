@@ -217,6 +217,7 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 			// encode to json
 			rw.Header().Set("Content-Type", "application/json; charset=utf-8")
 			enc := pjson.NewEncoderContext(r.ctx, rw)
+			enc.SetPublic(true)
 			if pretty {
 				enc.SetIndent("", "    ")
 			}
@@ -234,6 +235,7 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 		rw.WriteHeader(r.Code)
 	}
 	enc := pjson.NewEncoderContext(r.ctx, rw)
+	enc.SetPublic(true)
 	if pretty {
 		enc.SetIndent("", "    ")
 	}
