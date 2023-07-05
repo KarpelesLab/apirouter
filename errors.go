@@ -2,6 +2,7 @@ package apirouter
 
 import (
 	"errors"
+	"fmt"
 	"net/http"
 )
 
@@ -9,6 +10,7 @@ type Error struct {
 	Message string // error message
 	Code    int    // HTTP status code for error
 	Token   string // optional error token
+	parent  error  // for unwrap
 }
 
 var (
@@ -19,10 +21,50 @@ var (
 	ErrTeapot          = &Error{Message: "A teapot has appeared", Token: "error_teapot", Code: http.StatusTeapot}
 )
 
+func NewError(code int, token, msg string, args ...any) *Error {
+	err := fmt.Errorf(msg, args...)
+	return &Error{
+		Message: err.Error(),
+		Code:    code,
+		Token:   token,
+		parent:  errors.Unwrap(err),
+	}
+}
+
+// ErrBadRequest is a helper returning an error with code StatusBadRequest
+func ErrBadRequest(token, msg string, args ...any) *Error {
+	return NewError(http.StatusBadRequest, token, msg, args...)
+}
+
+// Forbidden is a helper returning an error with code StatusForbidden
+func ErrForbidden(token, msg string, args ...any) *Error {
+	return NewError(http.StatusForbidden, token, msg, args...)
+}
+
+func ErrMethodNotAllowed(token, msg string, args ...any) *Error {
+	return NewError(http.StatusMethodNotAllowed, token, msg, args...)
+}
+
+func ErrInternalServerError(token, msg string, args ...any) *Error {
+	return NewError(http.StatusInternalServerError, token, msg, args...)
+}
+
+func ErrNotImplemented(token, msg string, args ...any) *Error {
+	return NewError(http.StatusNotImplemented, token, msg, args...)
+}
+
+func ErrServiceUnavailable(token, msg string, args ...any) *Error {
+	return NewError(http.StatusServiceUnavailable, token, msg, args...)
+}
+
 func (e *Error) Error() string {
 	return e.Message
 }
 
 func (e *Error) HTTPStatus() int {
 	return e.Code
+}
+
+func (e *Error) Unwrap() error {
+	return e.parent
 }

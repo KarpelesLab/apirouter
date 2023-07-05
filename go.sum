@@ -1,3 +1,4 @@
+github.com/KarpelesLab/graphql v0.0.1/go.mod h1:pnXj3FtU+9JFtaB5kwFZrKrR2Nqi1srWNF0e6YsNb3g=
 github.com/KarpelesLab/pjson v0.1.1 h1:/95RVzwNupR2+S2TEFEPf66H+TtdNjepf/wDobcQml0=
 github.com/KarpelesLab/pjson v0.1.1/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/pjson v0.1.7 h1:j0EItKHyf/dXPZJXbMAS1Ioxlq1LTNH9YmPkmX/JN3s=
