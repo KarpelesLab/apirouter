@@ -3,6 +3,7 @@ package apirouter
 import (
 	"errors"
 	"fmt"
+	"io/fs"
 	"net/http"
 )
 
@@ -15,6 +16,7 @@ type Error struct {
 
 var (
 	ErrTargetMissing   = errors.New("missing target")
+	ErrNotFound        = &Error{Message: "Not found", Token: "error_not_found", Code: http.StatusNotFound, parent: fs.ErrNotExist}
 	ErrAccessDenied    = &Error{Message: "Access denied", Token: "error_access_denied", Code: http.StatusForbidden}
 	ErrInternal        = &Error{Message: "An internal error occured", Token: "error_internal", Code: http.StatusInternalServerError}
 	ErrInsecureRequest = &Error{Message: "Request must use POST and have the appropriate tokens", Token: "error_insecure_request", Code: http.StatusBadRequest}

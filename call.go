@@ -1,7 +1,6 @@
 package apirouter
 
 import (
-	"io/fs"
 	"net/http"
 	"strings"
 
@@ -44,20 +43,20 @@ func (c *Context) Call() (any, error) {
 				obj = nil
 				continue
 			}
-			//return nil, fs.ErrNotExist
+			//return nil, ErrNotFound
 		}
 
 		// attempt to load as ID
 		if obj != nil {
 			// you can't have Object/id/id_again
-			return nil, fs.ErrNotExist
+			return nil, ErrNotFound
 		}
 		if r.Action == nil {
-			return nil, fs.ErrNotExist
+			return nil, ErrNotFound
 		}
 		get := r.Action.Fetch
 		if get == nil {
-			return nil, fs.ErrNotExist
+			return nil, ErrNotFound
 		}
 		if corsReq {
 			// ignore loading ID if in cors req
@@ -83,7 +82,7 @@ func (c *Context) Call() (any, error) {
 		// ok we need to call a static method
 		meth := r.Static(m)
 		if meth == nil {
-			return nil, fs.ErrNotExist
+			return nil, ErrNotFound
 		}
 		switch c.verb {
 		case "HEAD", "GET", "POST":
@@ -126,7 +125,7 @@ func (c *Context) Call() (any, error) {
 
 	// need to call list
 	if r.Action == nil {
-		return nil, fs.ErrNotExist
+		return nil, ErrNotFound
 	}
 
 	if corsReq {

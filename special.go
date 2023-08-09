@@ -1,9 +1,5 @@
 package apirouter
 
-import (
-	"io/fs"
-)
-
 func (c *Context) CallSpecial() (any, error) {
 	p := c.path
 
@@ -11,6 +7,6 @@ func (c *Context) CallSpecial() (any, error) {
 
 	switch p {
 	default:
-		return nil, fs.ErrNotExist
+		return nil, ErrNotFound
 	}
 }

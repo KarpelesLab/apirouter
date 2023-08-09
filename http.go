@@ -3,8 +3,7 @@ package apirouter
 import (
 	"net/http"
 	"strings"
-
-	"github.com/KarpelesLab/webutil"
+	"time"
 )
 
 // apirouter.HTTP can be used as a handler function, or as a handler
@@ -12,7 +11,8 @@ import (
 func HTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx, err := NewHttp(rw, req)
 	if err != nil {
-		webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
+		res := ctx.errorResponse(time.Now(), err)
+		res.ServeHTTP(rw, req)
 		return
 	}
 	res, _ := ctx.Response()
