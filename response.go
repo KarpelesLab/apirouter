@@ -99,7 +99,7 @@ func (c *Context) Response() (res *Response, err error) {
 		res = c.errorResponse(start, err)
 		for _, h := range ResponseHooks {
 			if err := h(res); err != nil {
-				return nil, err
+				return c.errorResponse(start, err), err
 			}
 		}
 		return
