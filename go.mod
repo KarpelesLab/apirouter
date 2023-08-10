@@ -1,6 +1,6 @@
 module github.com/KarpelesLab/apirouter
 
-go 1.19
+go 1.20
 
 require (
 	github.com/KarpelesLab/pjson v0.1.9

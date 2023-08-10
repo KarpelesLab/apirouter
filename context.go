@@ -3,6 +3,7 @@ package apirouter
 import (
 	"bytes"
 	"context"
+	"fmt"
 	"io"
 	"mime"
 	"mime/multipart"
@@ -319,7 +320,11 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			// parse json
 			dec := pjson.NewDecoder(reader)
 			dec.UseNumber()
-			return dec.Decode(&c.params)
+			err := dec.Decode(&c.params)
+			if err != nil {
+				return fmt.Errorf("while reading json request body: %w", err)
+			}
+			return nil
 		case "application/x-www-form-urlencoded":
 			// parse url encoded
 			b, e := io.ReadAll(reader)
@@ -330,7 +335,11 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter
 				if v, ok := v.(string); ok {
-					return pjson.Unmarshal([]byte(v), &c.params)
+					err := pjson.Unmarshal([]byte(v), &c.params)
+					if err != nil {
+						return fmt.Errorf("while reading json request body: %w", err)
+					}
+					return nil
 				}
 			}
 			c.params = p
@@ -351,7 +360,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 					break
 				}
 				if err != nil {
-					return err
+					return fmt.Errorf("while reading multipart form data: %w", err)
 				}
 				name := part.FormName()
 				if name == "" {
@@ -378,7 +387,11 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter
 				if v, ok := v.(string); ok {
-					return pjson.Unmarshal([]byte(v), &c.params)
+					err := pjson.Unmarshal([]byte(v), &c.params)
+					if err != nil {
+						return fmt.Errorf("while reading json request body: %w", err)
+					}
+					return nil
 				}
 			}
 			c.params = p
