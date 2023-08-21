@@ -30,7 +30,7 @@ func GetHeader(ctx context.Context, hdr string) string {
 
 // SecurePost ensures request was a POST request and has the required headers
 func SecurePost(ctx context.Context) error {
-	c := &Context{}
+	var c *Context
 	ctx.Value(&c)
 
 	if c == nil {
