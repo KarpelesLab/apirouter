@@ -210,6 +210,10 @@ func (c *Context) GetExtraResponse(k string) any {
 	return c.extra[k]
 }
 
+func (c *Context) SetFlag(flag string, val bool) {
+	c.flags[flag] = val
+}
+
 func (c *Context) GetObject(typ string) any {
 	obj, ok := c.objects[typ]
 	if ok {
