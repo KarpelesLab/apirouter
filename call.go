@@ -46,11 +46,12 @@ func (c *Context) Call() (any, error) {
 			//return nil, ErrNotFound
 		}
 
-		// attempt to load as ID
+		// this is an attempt to load as ID
 		if obj != nil {
 			// you can't have Object/id/id_again
 			return nil, ErrNotFound
 		}
+		// make sure we have a GET action
 		if r.Action == nil {
 			return nil, ErrNotFound
 		}
@@ -59,7 +60,7 @@ func (c *Context) Call() (any, error) {
 			return nil, ErrNotFound
 		}
 		if corsReq {
-			// ignore loading ID if in cors req
+			// ignore loading the actual ID if in cors req
 			obj = true
 			continue
 		}
