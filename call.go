@@ -87,7 +87,7 @@ func (c *Context) Call() (any, error) {
 		}
 		switch c.verb {
 		case "HEAD", "GET", "POST":
-			return meth.Call(c)
+			return meth.CallArg(c, c.params)
 		default:
 			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 		}
