@@ -307,22 +307,20 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if err != nil {
 				return err
 			}
-		} else {
+		} else if req.ContentLength > 0 && req.ContentLength < int64(10<<20)+1 { // 10MB max body
 			// store body for optional future use
-			reader := io.LimitReader(body, int64(10<<20)+1) // 10MB
-			b, e := io.ReadAll(reader)
+			b, e := io.ReadAll(c.req.Body)
 			if e != nil {
 				return e
 			}
 			c.req.GetBody = func() (io.ReadCloser, error) { return io.NopCloser(bytes.NewReader(b)), nil }
 			body, _ = c.req.GetBody()
 		}
-		reader := io.LimitReader(body, int64(10<<20)+1) // 10MB
 
 		switch ct {
 		case "application/json":
 			// parse json
-			dec := pjson.NewDecoder(reader)
+			dec := pjson.NewDecoder(io.LimitReader(body, int64(10<<20)+1)) // max 10MB for json body
 			dec.UseNumber()
 			err := dec.Decode(&c.params)
 			if err != nil {
@@ -331,7 +329,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			return nil
 		case "application/x-www-form-urlencoded":
 			// parse url encoded
-			b, e := io.ReadAll(reader)
+			b, e := io.ReadAll(io.LimitReader(body, int64(10<<20)+1)) // max 10MB for urlencoded form data
 			if e != nil {
 				return e
 			}
@@ -354,7 +352,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if !ok {
 				return http.ErrMissingBoundary
 			}
-			r := multipart.NewReader(reader, boundary)
+			r := multipart.NewReader(io.LimitReader(body, int64(1<<28)+1), boundary) // max 256MB for form-data
 
 			p := make(map[string]any)
 
