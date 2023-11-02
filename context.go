@@ -306,6 +306,14 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		if err != nil {
 			return err
 		}
+		if req.ContentLength == 0 {
+			if _, found := req.Header["Content-Length"]; !found {
+				return webutil.HttpError(http.StatusLengthRequired)
+			}
+			// body is empty, ignore it
+			// we do not fallback to get _ param because of request method
+			return nil
+		}
 
 		body := c.req.Body
 		if c.req.GetBody != nil {
@@ -326,6 +334,10 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		switch ct {
 		case "application/json":
 			// parse json
+			if req.ContentLength > MaxJsonDataLength {
+				// reject body
+				return webutil.HttpError(http.StatusRequestEntityTooLarge)
+			}
 			dec := pjson.NewDecoder(io.LimitReader(body, MaxJsonDataLength))
 			dec.UseNumber()
 			err := dec.Decode(&c.params)
@@ -335,6 +347,10 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			return nil
 		case "application/x-www-form-urlencoded":
 			// parse url encoded
+			if req.ContentLength > MaxUrlEncodedDataLength {
+				// reject body
+				return webutil.HttpError(http.StatusRequestEntityTooLarge)
+			}
 			b, e := io.ReadAll(io.LimitReader(body, MaxUrlEncodedDataLength))
 			if e != nil {
 				return e
@@ -353,6 +369,10 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			c.params = p
 			return nil
 		case "multipart/form-data":
+			if req.ContentLength > MaxMultipartFormLength {
+				// reject body
+				return webutil.HttpError(http.StatusRequestEntityTooLarge)
+			}
 			// params should contain boundary
 			boundary, ok := params["boundary"]
 			if !ok {
