@@ -40,6 +40,12 @@ type Context struct {
 	csrfOk    bool // is csrf token OK?
 }
 
+const (
+	MaxJsonDataLength       = int64(10<<20) + 1 // JSON max body size = 10MB
+	MaxUrlEncodedDataLength = int64(1<<20) + 1  // urlencoded max body size = 1MB
+	MaxMultipartFormLength  = int64(1<<28) + 1  // multipart form max size = 256MB
+)
+
 func New(ctx context.Context, path, verb string) *Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -307,8 +313,8 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if err != nil {
 				return err
 			}
-		} else if req.ContentLength > 0 && req.ContentLength < int64(10<<20)+1 { // 10MB max body
-			// store body for optional future use
+		} else if req.ContentLength > 0 && req.ContentLength < MaxJsonDataLength {
+			// store body for optional future use only up to maximum JSON data length
 			b, e := io.ReadAll(c.req.Body)
 			if e != nil {
 				return e
@@ -320,7 +326,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		switch ct {
 		case "application/json":
 			// parse json
-			dec := pjson.NewDecoder(io.LimitReader(body, int64(10<<20)+1)) // max 10MB for json body
+			dec := pjson.NewDecoder(io.LimitReader(body, MaxJsonDataLength))
 			dec.UseNumber()
 			err := dec.Decode(&c.params)
 			if err != nil {
@@ -329,7 +335,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			return nil
 		case "application/x-www-form-urlencoded":
 			// parse url encoded
-			b, e := io.ReadAll(io.LimitReader(body, int64(10<<20)+1)) // max 10MB for urlencoded form data
+			b, e := io.ReadAll(io.LimitReader(body, MaxUrlEncodedDataLength))
 			if e != nil {
 				return e
 			}
@@ -352,7 +358,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if !ok {
 				return http.ErrMissingBoundary
 			}
-			r := multipart.NewReader(io.LimitReader(body, int64(1<<28)+1), boundary) // max 256MB for form-data
+			r := multipart.NewReader(io.LimitReader(body, MaxMultipartFormLength), boundary) // max 256MB for form-data
 
 			p := make(map[string]any)
 
