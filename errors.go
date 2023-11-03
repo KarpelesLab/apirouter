@@ -15,12 +15,14 @@ type Error struct {
 }
 
 var (
-	ErrTargetMissing   = errors.New("missing target")
-	ErrNotFound        = &Error{Message: "Not found", Token: "error_not_found", Code: http.StatusNotFound, parent: fs.ErrNotExist}
-	ErrAccessDenied    = &Error{Message: "Access denied", Token: "error_access_denied", Code: http.StatusForbidden}
-	ErrInternal        = &Error{Message: "An internal error occured", Token: "error_internal", Code: http.StatusInternalServerError}
-	ErrInsecureRequest = &Error{Message: "Request must use POST and have the appropriate tokens", Token: "error_insecure_request", Code: http.StatusBadRequest}
-	ErrTeapot          = &Error{Message: "A teapot has appeared", Token: "error_teapot", Code: http.StatusTeapot}
+	ErrTargetMissing         = errors.New("missing target")
+	ErrNotFound              = &Error{Message: "Not found", Token: "error_not_found", Code: http.StatusNotFound, parent: fs.ErrNotExist}
+	ErrAccessDenied          = &Error{Message: "Access denied", Token: "error_access_denied", Code: http.StatusForbidden}
+	ErrInternal              = &Error{Message: "An internal error occured", Token: "error_internal", Code: http.StatusInternalServerError}
+	ErrInsecureRequest       = &Error{Message: "Request must use POST and have the appropriate tokens", Token: "error_insecure_request", Code: http.StatusBadRequest}
+	ErrTeapot                = &Error{Message: "A teapot has appeared", Token: "error_teapot", Code: http.StatusTeapot}
+	ErrLengthRequired        = &Error{Message: "Content-Length header is required for this request", Token: "error_length_required", Code: http.StatusLengthRequired}
+	ErrRequestEntityTooLarge = &Error{Message: "Request body is too large", Token: "error_request_entity_too_large", Code: http.StatusRequestEntityTooLarge}
 )
 
 func NewError(code int, token, msg string, args ...any) *Error {

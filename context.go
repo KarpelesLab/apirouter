@@ -308,7 +308,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		}
 		if req.ContentLength == 0 {
 			if _, found := req.Header["Content-Length"]; !found {
-				return webutil.HttpError(http.StatusLengthRequired)
+				return ErrLengthRequired
 			}
 			// body is empty, ignore it
 			// we do not fallback to get _ param because of request method
@@ -336,7 +336,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			// parse json
 			if req.ContentLength > MaxJsonDataLength {
 				// reject body
-				return webutil.HttpError(http.StatusRequestEntityTooLarge)
+				return ErrRequestEntityTooLarge
 			}
 			dec := pjson.NewDecoder(io.LimitReader(body, MaxJsonDataLength))
 			dec.UseNumber()
@@ -349,7 +349,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			// parse url encoded
 			if req.ContentLength > MaxUrlEncodedDataLength {
 				// reject body
-				return webutil.HttpError(http.StatusRequestEntityTooLarge)
+				return ErrRequestEntityTooLarge
 			}
 			b, e := io.ReadAll(io.LimitReader(body, MaxUrlEncodedDataLength))
 			if e != nil {
@@ -371,7 +371,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		case "multipart/form-data":
 			if req.ContentLength > MaxMultipartFormLength {
 				// reject body
-				return webutil.HttpError(http.StatusRequestEntityTooLarge)
+				return ErrRequestEntityTooLarge
 			}
 			// params should contain boundary
 			boundary, ok := params["boundary"]
