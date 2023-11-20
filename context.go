@@ -262,20 +262,26 @@ func (c *Context) RequestId() string {
 func (c *Context) GetDomain() string {
 	// get domain for request
 	if c.req != nil {
-		// get from request
-		if originalHost := c.req.Header.Get("Sec-Original-Host"); originalHost != "" {
-			if host, _, _ := net.SplitHostPort(originalHost); host != "" {
-				return host
-			}
-			return originalHost
+		return GetDomainForRequest(c.req)
+	}
+
+	// fallback
+	return "_default"
+}
+
+func GetDomainForRequest(req *http.Request) string {
+	if originalHost := req.Header.Get("Sec-Original-Host"); originalHost != "" {
+		if host, _, _ := net.SplitHostPort(originalHost); host != "" {
+			return host
 		}
-		if c.req.Host != "" {
-			host, _, _ := net.SplitHostPort(c.req.Host)
-			if host != "" {
-				return host
-			}
-			return c.req.Host
+		return originalHost
+	}
+	if req.Host != "" {
+		host, _, _ := net.SplitHostPort(req.Host)
+		if host != "" {
+			return host
 		}
+		return req.Host
 	}
 
 	// fallback
