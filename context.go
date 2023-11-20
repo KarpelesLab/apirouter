@@ -7,7 +7,6 @@ import (
 	"io"
 	"mime"
 	"mime/multipart"
-	"net"
 	"net/http"
 	"net/url"
 	"path"
@@ -263,25 +262,6 @@ func (c *Context) GetDomain() string {
 	// get domain for request
 	if c.req != nil {
 		return GetDomainForRequest(c.req)
-	}
-
-	// fallback
-	return "_default"
-}
-
-func GetDomainForRequest(req *http.Request) string {
-	if originalHost := req.Header.Get("Sec-Original-Host"); originalHost != "" {
-		if host, _, _ := net.SplitHostPort(originalHost); host != "" {
-			return host
-		}
-		return originalHost
-	}
-	if req.Host != "" {
-		host, _, _ := net.SplitHostPort(req.Host)
-		if host != "" {
-			return host
-		}
-		return req.Host
 	}
 
 	// fallback
