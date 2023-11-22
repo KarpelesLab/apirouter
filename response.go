@@ -69,7 +69,7 @@ func (c *Context) Response() (res *Response, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			stack := debug.Stack()
-			slog.Error(fmt.Sprintf("[api] panic in %s: %s\nStack\n%s", c.path, e, stack), "event", "apirouter:response:panic", "category", "go.panic")
+			slog.ErrorContext(c, fmt.Sprintf("[api] panic in %s: %s\nStack\n%s", c.path, e, stack), "event", "apirouter:response:panic", "category", "go.panic")
 			err = fmt.Errorf("panic: %s", e)
 			res = &Response{
 				Result:    "error",
