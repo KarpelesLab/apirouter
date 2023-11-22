@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"log"
+	"log/slog"
 	"net/http"
 	"net/url"
 	"runtime"
@@ -69,7 +69,8 @@ func (c *Context) Response() (res *Response, err error) {
 	defer func() {
 		if e := recover(); e != nil {
 			stack := debug.Stack()
-			log.Printf("[api] panic in %s: %s\nStack\n%s", c.path, e, stack)
+			slog.Error(fmt.Sprintf("[api] panic in %s: %s\nStack\n%s", c.path, e, stack), "event", "apirouter:response:panic", "category", "go.panic")
+			err = fmt.Errorf("panic: %s", e)
 			res = &Response{
 				Result:    "error",
 				Error:     fmt.Sprintf("panic: %s", e),
@@ -77,10 +78,9 @@ func (c *Context) Response() (res *Response, err error) {
 				Debug:     string(stack),
 				Time:      float64(time.Since(start)) / float64(time.Second),
 				RequestId: c.reqid,
-				err:       fmt.Errorf("panic: %s", err),
+				err:       err,
 				ctx:       c,
 			}
-			err = fmt.Errorf("panic: %s", err)
 		}
 	}()
 
