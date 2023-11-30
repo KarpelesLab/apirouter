@@ -181,7 +181,7 @@ func GetParam[T any](ctx context.Context, v string) (T, bool) {
 	}
 
 	final := reflect.Zero(typ).Interface().(T)
-	err := typutil.Assign(final, res)
+	err := typutil.Assign(&final, res)
 	return final, err == nil
 }
 
