@@ -5,6 +5,7 @@ import (
 	"context"
 	"fmt"
 	"io"
+	"io/fs"
 	"mime"
 	"mime/multipart"
 	"net/http"
@@ -15,6 +16,7 @@ import (
 
 	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/pobj"
+	"github.com/KarpelesLab/typutil"
 	"github.com/KarpelesLab/webutil"
 	"github.com/google/uuid"
 )
@@ -177,13 +179,10 @@ func GetParam[T any](ctx context.Context, v string) (T, bool) {
 	if rv, ok := res.(T); ok {
 		return rv, true
 	}
-	// attempt to convert using reflect's convert (can convert float to int, etc)
-	vres := reflect.ValueOf(res)
-	if vres.CanConvert(typ) {
-		return vres.Convert(typ).Interface().(T), true
-	}
-	// failed to read, return zero
-	return reflect.Zero(typ).Interface().(T), false
+
+	final := reflect.Zero(typ).Interface().(T)
+	err := typutil.Assign(final, res)
+	return final, err == nil
 }
 
 func (c *Context) GetQuery(v string) any {
@@ -194,9 +193,15 @@ func (c *Context) GetQueryFull() map[string]any {
 	return c.get
 }
 
-func (c *Context) GetParamTo(v string, obj any) bool {
-	// TODO
-	return false
+func (c *Context) GetParamTo(v string, obj any) error {
+	sv := c.GetParam(v)
+	if sv == nil {
+		// variable not found
+		return fs.ErrNotExist
+	}
+
+	// perform assign
+	return typutil.Assign(obj, v)
 }
 
 func (c *Context) SetPath(p string) {
