@@ -85,6 +85,9 @@ func (c *Context) Value(v any) any {
 	case **Context:
 		*k = c
 		return c
+	case **http.Request:
+		*k = c.req
+		return c.req
 	case string:
 		switch k {
 		case "input_json":
