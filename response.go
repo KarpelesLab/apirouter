@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"net/url"
 	"runtime"
 	"runtime/debug"
 	"time"
@@ -16,16 +15,16 @@ import (
 )
 
 type Response struct {
-	Result       string   `json:"result"` // error|success|redirect
-	Error        string   `json:"error,omitempty"`
-	Token        string   `json:"token,omitempty"`
-	Code         int      `json:"code,omitempty"`
-	Debug        string   `json:"debug,omitempty"`
-	RequestId    string   `json:"request_id,omitempty"`
-	Time         float64  `json:"time"`
-	Data         any      `json:"data"`
-	RedirectURL  *url.URL `json:"redirect_url,omitempty"`
-	RedirectCode int      `json:"redirect_code,omitempty"`
+	Result       string  `json:"result"` // error|success|redirect
+	Error        string  `json:"error,omitempty"`
+	Token        string  `json:"token,omitempty"`
+	Code         int     `json:"code,omitempty"`
+	Debug        string  `json:"debug,omitempty"`
+	RequestId    string  `json:"request_id,omitempty"`
+	Time         float64 `json:"time"`
+	Data         any     `json:"data"`
+	RedirectURL  string  `json:"redirect_url,omitempty"`
+	RedirectCode int     `json:"redirect_code,omitempty"`
 	err          error
 	ctx          *Context
 }
@@ -38,7 +37,7 @@ func (c *Context) errorResponse(start time.Time, err error) *Response {
 	if e, ok := err.(*webutil.Redirect); ok {
 		res := &Response{
 			Result:       "redirect",
-			RedirectURL:  e.URL,
+			RedirectURL:  e.URL.String(),
 			RedirectCode: e.Code,
 			Time:         float64(time.Since(start)) / float64(time.Second),
 			RequestId:    c.reqid,
@@ -147,7 +146,7 @@ func (r *Response) getResponseData() any {
 	}
 	res["time"] = r.Time
 	res["data"] = r.Data
-	if r.RedirectURL != nil {
+	if r.RedirectURL != "" {
 		res["redirect_url"] = r.RedirectURL
 		if r.RedirectCode != 0 {
 			res["redirect_code"] = r.RedirectCode
