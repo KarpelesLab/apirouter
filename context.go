@@ -39,6 +39,7 @@ type Context struct {
 	inputJson pjson.RawMessage
 	user      any  // associated user object
 	csrfOk    bool // is csrf token OK?
+	showProt  bool // show protected fields?
 }
 
 const (
@@ -122,6 +123,11 @@ func (c *Context) SetCsrfValidated(ok bool) {
 // SetParams sets the params passed to the API
 func (c *Context) SetParams(v map[string]any) {
 	c.params = v
+}
+
+// SetShowProtectedFields allows defining if fields flagged as protected should be shown or not
+func (c *Context) SetShowProtectedFields(p bool) {
+	c.showProt = p
 }
 
 // SetParam allows setting one individual parameter to the request

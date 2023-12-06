@@ -6,7 +6,6 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
-	"runtime"
 	"runtime/debug"
 	"time"
 
@@ -128,10 +127,6 @@ func (c *Context) Response() (res *Response, err error) {
 	return
 }
 
-func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
-	r.serveWithContext(r.ctx, rw, req)
-}
-
 func (r *Response) getResponseData() any {
 	res := make(map[string]any)
 	if r.ctx.extra != nil {
@@ -163,8 +158,15 @@ func (r *Response) GetContext() *Context {
 	return r.ctx
 }
 
-//go:noinline
-func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter, req *http.Request) {
+// getJsonCtx returns a context to pass to MarshalContext that may hide some values
+func (r *Response) getJsonCtx() context.Context {
+	if r.ctx.showProt {
+		return r.ctx
+	}
+	return pjson.ContextPublic(r.ctx)
+}
+
+func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// check req for HTTP Query flags: raw & pretty
 	_, raw := r.ctx.flags["raw"]
 	_, pretty := r.ctx.flags["pretty"]
@@ -215,7 +217,7 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 		default:
 			// encode to json
 			rw.Header().Set("Content-Type", "application/json; charset=utf-8")
-			enc := pjson.NewEncoderContext(pjson.ContextPublic(r.ctx), rw)
+			enc := pjson.NewEncoderContext(r.getJsonCtx(), rw)
 			if pretty {
 				enc.SetIndent("", "    ")
 			}
@@ -232,7 +234,7 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 	if r.Code != 0 {
 		rw.WriteHeader(r.Code)
 	}
-	enc := pjson.NewEncoderContext(pjson.ContextPublic(r.ctx), rw)
+	enc := pjson.NewEncoderContext(r.getJsonCtx(), rw)
 	if pretty {
 		enc.SetIndent("", "    ")
 	}
@@ -241,5 +243,4 @@ func (r *Response) serveWithContext(ctx context.Context, rw http.ResponseWriter,
 	if err != nil {
 		webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
 	}
-	runtime.KeepAlive(ctx)
 }
