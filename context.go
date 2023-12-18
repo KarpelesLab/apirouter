@@ -233,6 +233,17 @@ func (c *Context) SetFlag(flag string, val bool) {
 	c.flags[flag] = val
 }
 
+func (c *Context) RemoteAddr() string {
+	if req := c.req; req != nil {
+		ipp := webutil.ParseIPPort(req.RemoteAddr)
+		if ipp != nil {
+			return ipp.IP.String()
+		}
+	}
+
+	return "127.0.0.1"
+}
+
 func (c *Context) GetObject(typ string) any {
 	obj, ok := c.objects[typ]
 	if ok {
