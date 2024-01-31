@@ -52,6 +52,12 @@ func New(ctx context.Context, path, verb string) *Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	var reqid string
+	if r, ok := ctx.Value("request_id").(string); ok && r != "" {
+		reqid = r
+	} else {
+		reqid = uuid.Must(uuid.NewRandom()).String()
+	}
 
 	res := &Context{
 		Context: ctx,
@@ -60,13 +66,20 @@ func New(ctx context.Context, path, verb string) *Context {
 		objects: make(map[string]any),
 		flags:   make(map[string]bool),
 		extra:   make(map[string]any),
-		reqid:   uuid.Must(uuid.NewRandom()).String(),
+		reqid:   reqid,
 	}
 
 	return res
 }
 
 func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
+	var reqid string
+	if r, ok := req.Context().Value("request_id").(string); ok && r != "" {
+		reqid = r
+	} else {
+		reqid = uuid.Must(uuid.NewRandom()).String()
+	}
+
 	res := &Context{
 		Context: req.Context(),
 		path:    strings.TrimLeft(req.URL.Path, "/"),
@@ -74,7 +87,7 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 		objects: make(map[string]any),
 		flags:   make(map[string]bool),
 		extra:   make(map[string]any),
-		reqid:   uuid.Must(uuid.NewRandom()).String(),
+		reqid:   reqid,
 	}
 
 	err := res.SetHttp(rw, req)
