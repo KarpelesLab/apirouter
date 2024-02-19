@@ -17,6 +17,7 @@ type Response struct {
 	Result       string  `json:"result"` // error|success|redirect
 	Error        string  `json:"error,omitempty"`
 	Token        string  `json:"token,omitempty"`
+	ErrorInfo    any     `json:"error_info,omitempty"`
 	Code         int     `json:"code,omitempty"`
 	Debug        string  `json:"debug,omitempty"`
 	RequestId    string  `json:"request_id,omitempty"`
@@ -57,6 +58,7 @@ func (c *Context) errorResponse(start time.Time, err error) *Response {
 	}
 	if obj, ok := err.(*Error); ok {
 		res.Token = obj.Token
+		res.ErrorInfo = obj.Info
 	}
 	return res
 }
@@ -149,6 +151,9 @@ func (r *Response) getResponseData() any {
 	}
 	if r.Token != "" {
 		res["token"] = r.Token
+	}
+	if r.ErrorInfo != nil {
+		res["error_info"] = r.ErrorInfo
 	}
 
 	return res

@@ -11,6 +11,7 @@ type Error struct {
 	Message string // error message
 	Code    int    // HTTP status code for error
 	Token   string // optional error token
+	Info    any    // optional extra information for the error
 	parent  error  // for unwrap
 }
 
