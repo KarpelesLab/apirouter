@@ -422,19 +422,18 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 
 				filename := part.FileName()
 
-				b := &bytes.Buffer{}
-				_, err = io.Copy(b, part)
+				b, err := io.ReadAll(part)
 				if err != nil {
 					return err
 				}
 
 				if filename == "" {
 					// normal value
-					p[name] = b.String()
+					p[name] = string(b)
 					continue
 				}
 
-				p[name] = map[string]any{"filename": filename, "data": b.Bytes()}
+				p[name] = map[string]any{"filename": filename, "data": b}
 			}
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter
