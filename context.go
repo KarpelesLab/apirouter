@@ -20,6 +20,7 @@ import (
 	"github.com/KarpelesLab/typutil"
 	"github.com/KarpelesLab/webutil"
 	"github.com/google/uuid"
+	"nhooyr.io/websocket"
 )
 
 type Context struct {
@@ -31,6 +32,7 @@ type Context struct {
 
 	req    *http.Request       // can be nil
 	rw     http.ResponseWriter // can be nil
+	wsc    *websocket.Conn     // can be nil
 	params map[string]any      // parameters passed from POST?
 	get    map[string]any      // GET parameters (used for _ctx, etc)
 	flags  map[string]bool     // flags, such as "raw" or "pretty"
@@ -100,6 +102,9 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 func NewChild(parent *Context, req []byte) (*Context, error) {
 	reqid := uuid.Must(uuid.NewRandom()).String()
 	res := &Context{
+		req:       parent.req,
+		rw:        parent.rw,
+		wsc:       parent.wsc,
 		Context:   parent.Context,
 		objects:   make(map[string]any),
 		get:       parent.get,
