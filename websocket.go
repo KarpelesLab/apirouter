@@ -67,6 +67,7 @@ func handleWebsocket(c *Context, wsc *websocket.Conn) {
 			err = enc.Encode(res.getResponseData())
 			if err != nil {
 				// no really
+				wsc.Close(websocket.StatusInvalidFramePayloadData, err.Error())
 				return
 			}
 			wsc.Write(ctx, websocket.MessageText, buf.Bytes())
