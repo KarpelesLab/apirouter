@@ -22,6 +22,7 @@ func (c *Context) prepareWebsocket() (any, error) {
 	res := &Response{
 		Result: "upgrade",
 		Code:   101,
+		ctx:    c,
 		subhandler: func(rw http.ResponseWriter, req *http.Request) {
 			wsc, err := websocket.Accept(rw, req, opts)
 			if err != nil {
