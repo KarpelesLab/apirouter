@@ -12,12 +12,18 @@ import (
 )
 
 func (c *Context) prepareWebsocket() (any, error) {
+	var opts *websocket.AcceptOptions
+	if c.csrfOk {
+		// csrf token is valid, so we accept any host
+		opts = &websocket.AcceptOptions{InsecureSkipVerify: true}
+	}
+
 	// return a *Response for websocket upgrade
 	res := &Response{
 		Result: "upgrade",
 		Code:   101,
 		subhandler: func(rw http.ResponseWriter, req *http.Request) {
-			wsc, err := websocket.Accept(rw, req, nil)
+			wsc, err := websocket.Accept(rw, req, opts)
 			if err != nil {
 				// in this case, we already have a response sent to the client
 				return
