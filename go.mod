@@ -10,7 +10,10 @@ require (
 	github.com/KarpelesLab/webutil v0.2.0
 )
 
-require github.com/google/uuid v1.4.0
+require (
+	github.com/google/uuid v1.4.0
+	nhooyr.io/websocket v1.8.11
+)
 
 require (
 	github.com/KarpelesLab/typutil v0.2.4

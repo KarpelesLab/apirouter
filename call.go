@@ -14,6 +14,10 @@ func (c *Context) Call() (any, error) {
 		return c.CallSpecial()
 	}
 
+	if p == "_websocket" {
+		return c.prepareWebsocket()
+	}
+
 	r := pobj.Root()
 	m := ""
 	method := false

@@ -27,6 +27,7 @@ type Response struct {
 	RedirectCode int     `json:"redirect_code,omitempty"`
 	err          error
 	ctx          *Context
+	subhandler   http.HandlerFunc
 }
 
 func (c *Context) errorResponse(start time.Time, err error) *Response {
@@ -172,6 +173,11 @@ func (r *Response) getJsonCtx() context.Context {
 }
 
 func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
+	if h := r.subhandler; h != nil {
+		h(rw, req)
+		return
+	}
+
 	// check req for HTTP Query flags: raw & pretty
 	_, raw := r.ctx.flags["raw"]
 	_, pretty := r.ctx.flags["pretty"]

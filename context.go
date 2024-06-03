@@ -3,6 +3,7 @@ package apirouter
 import (
 	"bytes"
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"io/fs"
@@ -92,6 +93,45 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 
 	err := res.SetHttp(rw, req)
 	return res, err
+}
+
+// NewChild instanciates a new Context for a given child request. req will be a json
+// object containing: path, verb (default=GET), params,
+func NewChild(parent *Context, req []byte) (*Context, error) {
+	reqid := uuid.Must(uuid.NewRandom()).String()
+	res := &Context{
+		Context:   parent.Context,
+		objects:   make(map[string]any),
+		get:       parent.get,
+		flags:     make(map[string]bool),
+		extra:     make(map[string]any),
+		inputJson: req,
+		reqid:     reqid,
+		user:      parent.user,
+		csrfOk:    parent.csrfOk,
+		showProt:  parent.showProt,
+	}
+
+	var in map[string]any
+	err := pjson.Unmarshal(req, &in)
+	if err != nil {
+		return res, err
+	}
+
+	if p, ok := in["path"].(string); ok {
+		res.path = p
+	} else {
+		return res, errors.New("path is missing")
+	}
+
+	if verb, ok := in["verb"].(string); ok {
+		res.verb = verb
+	}
+	if params, ok := in["params"].(map[string]any); ok {
+		res.params = params
+	}
+
+	return res, nil
 }
 
 func (c *Context) Value(v any) any {
