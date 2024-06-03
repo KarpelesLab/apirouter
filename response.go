@@ -108,8 +108,8 @@ func (c *Context) Response() (res *Response, err error) {
 
 	if obj, ok := val.(*Response); ok {
 		// already a response object
-		res.Time = float64(time.Since(start)) / float64(time.Second)
 		res = obj
+		res.Time = float64(time.Since(start)) / float64(time.Second)
 		for _, h := range ResponseHooks {
 			h(res)
 		}
