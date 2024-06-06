@@ -37,6 +37,7 @@ type Context struct {
 	get    map[string]any      // GET parameters (used for _ctx, etc)
 	flags  map[string]bool     // flags, such as "raw" or "pretty"
 	extra  map[string]any      // extra values in response
+	qid    any                 // client defined query id (optional)
 
 	objects   map[string]any
 	inputJson pjson.RawMessage
@@ -97,6 +98,13 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 	return res, err
 }
 
+type childRequest struct {
+	Path    string           `json:"path" validator:"not_empty"`
+	Verb    string           `json:"verb"`
+	Params  map[string]any   `json:"params"`
+	QueryId pjson.RawMessage `json:"query_id"`
+}
+
 // NewChild instanciates a new Context for a given child request. req will be a json
 // object containing: path, verb (default=GET), params,
 func NewChild(parent *Context, req []byte) (*Context, error) {
@@ -106,6 +114,7 @@ func NewChild(parent *Context, req []byte) (*Context, error) {
 		rw:        parent.rw,
 		wsc:       parent.wsc,
 		Context:   parent.Context,
+		verb:      "GET",
 		objects:   make(map[string]any),
 		get:       parent.get,
 		flags:     make(map[string]bool),
@@ -117,24 +126,21 @@ func NewChild(parent *Context, req []byte) (*Context, error) {
 		showProt:  parent.showProt,
 	}
 
-	var in map[string]any
+	var in *childRequest
 	err := pjson.Unmarshal(req, &in)
 	if err != nil {
 		return res, err
 	}
 
-	if p, ok := in["path"].(string); ok {
-		res.path = p
-	} else {
+	if in.Path == "" {
 		return res, errors.New("path is missing")
 	}
-
-	if verb, ok := in["verb"].(string); ok {
-		res.verb = verb
+	if in.Verb != "" {
+		res.verb = in.Verb
 	}
-	if params, ok := in["params"].(map[string]any); ok {
-		res.params = params
-	}
+	res.path = in.Path
+	res.params = in.Params
+	res.qid = in.QueryId
 
 	return res, nil
 }

@@ -25,6 +25,7 @@ type Response struct {
 	Data         any     `json:"data"`
 	RedirectURL  string  `json:"redirect_url,omitempty"`
 	RedirectCode int     `json:"redirect_code,omitempty"`
+	QueryId      any     `json:"query_id,omitempty"`
 	err          error
 	ctx          *Context
 	subhandler   http.HandlerFunc
@@ -42,6 +43,7 @@ func (c *Context) errorResponse(start time.Time, err error) *Response {
 			RedirectCode: e.Code,
 			Time:         float64(time.Since(start)) / float64(time.Second),
 			RequestId:    c.reqid,
+			QueryId:      c.qid,
 			err:          e,
 			ctx:          c,
 		}
@@ -54,6 +56,7 @@ func (c *Context) errorResponse(start time.Time, err error) *Response {
 		Code:      code,
 		Time:      float64(time.Since(start)) / float64(time.Second),
 		RequestId: c.reqid,
+		QueryId:   c.qid,
 		err:       err,
 		ctx:       c,
 	}
@@ -79,6 +82,7 @@ func (c *Context) Response() (res *Response, err error) {
 				Debug:     string(stack),
 				Time:      float64(time.Since(start)) / float64(time.Second),
 				RequestId: c.reqid,
+				QueryId:   c.qid,
 				err:       err,
 				ctx:       c,
 			}
@@ -121,6 +125,7 @@ func (c *Context) Response() (res *Response, err error) {
 		Code:      code,
 		Time:      float64(time.Since(start)) / float64(time.Second),
 		RequestId: c.reqid,
+		QueryId:   c.qid,
 		Data:      val,
 		ctx:       c,
 	}
@@ -144,6 +149,7 @@ func (r *Response) getResponseData() any {
 	}
 	res["time"] = r.Time
 	res["data"] = r.Data
+	res["request_id"] = r.RequestId
 	if r.RedirectURL != "" {
 		res["redirect_url"] = r.RedirectURL
 		if r.RedirectCode != 0 {
@@ -155,6 +161,9 @@ func (r *Response) getResponseData() any {
 	}
 	if r.ErrorInfo != nil {
 		res["error_info"] = r.ErrorInfo
+	}
+	if r.QueryId != nil {
+		res["query_id"] = r.QueryId
 	}
 
 	return res
