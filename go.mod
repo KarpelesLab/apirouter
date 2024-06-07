@@ -16,6 +16,6 @@ require (
 )
 
 require (
-	github.com/KarpelesLab/typutil v0.2.4
+	github.com/KarpelesLab/typutil v0.2.13
 	golang.org/x/exp v0.0.0-20231127185646-65229373498e // indirect
 )
