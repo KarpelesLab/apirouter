@@ -25,11 +25,22 @@ func BroadcastWS(ctx context.Context, data any) error {
 	if err != nil {
 		return err
 	}
+	bin, err := cbor.Marshal(data)
+	if err != nil {
+		return err
+	}
 
 	clients := listWsClients()
 	for _, c := range clients {
 		if wsc := c.wsc; wsc != nil {
-			wsc.Write(ctx, websocket.MessageText, str)
+			switch c.accept[0] {
+			case "application/cbor":
+				wsc.Write(ctx, websocket.MessageBinary, bin)
+			case "application/json":
+				fallthrough
+			default:
+				wsc.Write(ctx, websocket.MessageText, str)
+			}
 		}
 	}
 	return nil
@@ -64,6 +75,10 @@ func (c *Context) prepareWebsocket() (any, error) {
 				// in this case, we already have a response sent to the client
 				return
 			}
+			// determine if we should use binary or text protocol
+			typ := c.selectAcceptedType("application/json", "application/cbor")
+			// enfore only 1 accept
+			c.accept = []string{typ}
 			// switch rw to wsc
 			c.rw = nil
 			c.wsc = wsc
