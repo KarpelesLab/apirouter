@@ -109,7 +109,7 @@ type childRequest struct {
 
 // NewChild instanciates a new Context for a given child request. req will be a json
 // object containing: path, verb (default=GET), params,
-func NewChild(parent *Context, req []byte) (*Context, error) {
+func NewChild(parent *Context, req []byte, contentType string) (*Context, error) {
 	reqid := uuid.Must(uuid.NewRandom()).String()
 	res := &Context{
 		req:       parent.req,
@@ -129,9 +129,19 @@ func NewChild(parent *Context, req []byte) (*Context, error) {
 	}
 
 	var in *childRequest
-	err := pjson.Unmarshal(req, &in)
-	if err != nil {
-		return res, err
+	switch contentType {
+	case "application/cbor":
+		err := cbor.Unmarshal(req, &in)
+		if err != nil {
+			return res, err
+		}
+	case "application/json":
+		fallthrough
+	default:
+		err := pjson.Unmarshal(req, &in)
+		if err != nil {
+			return res, err
+		}
 	}
 
 	if in.Path == "" {

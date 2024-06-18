@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/KarpelesLab/pjson"
+	"github.com/fxamacker/cbor/v2"
 	"nhooyr.io/websocket"
 )
 
@@ -106,10 +107,28 @@ func (c *Context) handleWebsocket() {
 		}
 
 		switch mt {
+		case websocket.MessageBinary:
+			// handle as cbor
+			var res *Response
+			subCtx, err := NewChild(c, dat, "application/cbor")
+			if err != nil {
+				res = subCtx.errorResponse(time.Now(), err)
+			} else {
+				res, _ = subCtx.Response()
+			}
+			buf := &bytes.Buffer{}
+			enc := cbor.NewEncoder(buf)
+			err = enc.Encode(res.getResponseData())
+			if err != nil {
+				// no really
+				c.wsc.Close(websocket.StatusInvalidFramePayloadData, err.Error())
+				return
+			}
+			c.wsc.Write(c, websocket.MessageBinary, buf.Bytes())
 		case websocket.MessageText:
 			// handle as json
 			var res *Response
-			subCtx, err := NewChild(c, dat)
+			subCtx, err := NewChild(c, dat, "application/json")
 			if err != nil {
 				res = subCtx.errorResponse(time.Now(), err)
 			} else {
