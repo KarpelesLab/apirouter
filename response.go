@@ -2,6 +2,7 @@ package apirouter
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -11,6 +12,7 @@ import (
 
 	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/webutil"
+	"github.com/fxamacker/cbor/v2"
 )
 
 type Response struct {
@@ -187,9 +189,8 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 		return
 	}
 
-	// check req for HTTP Query flags: raw & pretty
+	// check req for HTTP Query flags: raw
 	_, raw := r.ctx.flags["raw"]
-	_, pretty := r.ctx.flags["pretty"]
 
 	// add standard headers for API respsones (no cache, cors)
 	rw.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
@@ -236,12 +237,7 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 			return
 		default:
 			// encode to json
-			rw.Header().Set("Content-Type", "application/json; charset=utf-8")
-			enc := pjson.NewEncoderContext(r.getJsonCtx(), rw)
-			if pretty {
-				enc.SetIndent("", "    ")
-			}
-			err := enc.Encode(v)
+			err := r.writeObject(rw, v)
 			if err != nil {
 				webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
 			}
@@ -250,17 +246,35 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 
 	// send response normally
-	rw.Header().Set("Content-Type", "application/json; charset=utf-8")
-	if r.Code != 0 {
-		rw.WriteHeader(r.Code)
-	}
-	enc := pjson.NewEncoderContext(r.getJsonCtx(), rw)
-	if pretty {
-		enc.SetIndent("", "    ")
-	}
-
-	err := enc.Encode(r.getResponseData())
+	err := r.writeObject(rw, r.getResponseData())
 	if err != nil {
 		webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
+	}
+}
+
+func (r *Response) writeObject(rw http.ResponseWriter, obj any) error {
+	typ := r.ctx.selectAcceptedType("application/json", "application/cbor")
+
+	switch typ {
+	case "application/json":
+		_, pretty := r.ctx.flags["pretty"]
+		rw.Header().Set("Content-Type", "application/json; charset=utf-8")
+		if r.Code != 0 {
+			rw.WriteHeader(r.Code)
+		}
+		enc := pjson.NewEncoderContext(r.getJsonCtx(), rw)
+		if pretty {
+			enc.SetIndent("", "    ")
+		}
+		return enc.Encode(obj)
+	case "application/cbor":
+		rw.Header().Set("Content-Type", "application/cbor")
+		if r.Code != 0 {
+			rw.WriteHeader(r.Code)
+		}
+		enc := cbor.NewEncoder(rw)
+		return enc.Encode(obj)
+	default:
+		return errors.New("could not encode object (should never happen)")
 	}
 }

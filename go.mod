@@ -11,9 +11,12 @@ require (
 )
 
 require (
+	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/google/uuid v1.4.0
 	nhooyr.io/websocket v1.8.11
 )
+
+require github.com/x448/float16 v0.8.4 // indirect
 
 require (
 	github.com/KarpelesLab/typutil v0.2.13

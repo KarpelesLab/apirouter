@@ -19,6 +19,7 @@ import (
 	"github.com/KarpelesLab/pobj"
 	"github.com/KarpelesLab/typutil"
 	"github.com/KarpelesLab/webutil"
+	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
 	"nhooyr.io/websocket"
 )
@@ -41,9 +42,10 @@ type Context struct {
 
 	objects   map[string]any
 	inputJson pjson.RawMessage
-	user      any  // associated user object
-	csrfOk    bool // is csrf token OK?
-	showProt  bool // show protected fields?
+	user      any      // associated user object
+	csrfOk    bool     // is csrf token OK?
+	showProt  bool     // show protected fields?
+	accept    []string // accepted mime types
 }
 
 const (
@@ -369,6 +371,9 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	if _, pretty := c.get["pretty"]; pretty {
 		c.flags["pretty"] = true
 	}
+	if accept := req.Header.Get("Accept"); accept != "" {
+		c.setAccept(accept)
+	}
 
 	// try to parse params
 	if c.params != nil {
@@ -418,6 +423,19 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			err := dec.Decode(&c.params)
 			if err != nil {
 				return fmt.Errorf("while reading json request body: %w", err)
+			}
+			return nil
+		case "application/cbor":
+			// parse cbor
+			if req.ContentLength > MaxJsonDataLength {
+				// reject body
+				return ErrRequestEntityTooLarge
+			}
+			dm, _ := cbor.DecOptions{DupMapKey: cbor.DupMapKeyEnforcedAPF, BigIntDec: cbor.BigIntDecodePointer}.DecMode()
+			dec := dm.NewDecoder(io.LimitReader(body, MaxJsonDataLength))
+			err := dec.Decode(&c.params)
+			if err != nil {
+				return fmt.Errorf("while reading cbor request body: %w", err)
 			}
 			return nil
 		case "application/x-www-form-urlencoded":
@@ -573,4 +591,49 @@ func (c *Context) NewRequest(target string) (*http.Request, error) {
 func (c *Context) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	res, _ := c.Response()
 	res.ServeHTTP(rw, req)
+}
+
+// setAccept sets the accepted mime types for this call
+func (c *Context) setAccept(s string) {
+	// this can be a pain
+	// https://developer.mozilla.org/en-US/docs/Web/HTTP/Headers/Accept
+	//
+	// Can look like:
+	// Accept: text/html, application/xhtml+xml, application/xml;q=0.9, image/webp, */*;q=0.8
+	var res []string
+
+	for _, v := range strings.Split(s, ",") {
+		v = strings.TrimSpace(v)
+		if p := strings.IndexByte(v, ';'); p > 0 {
+			v = strings.TrimSpace(v[:p])
+		}
+		if v != "" {
+			res = append(res, v)
+		}
+	}
+	c.accept = res
+}
+
+// selectAcceptedType selects an acceptable type based on the provided list and accepted types
+func (c *Context) selectAcceptedType(typ ...string) string {
+	if len(typ) == 0 {
+		return ""
+	}
+	if len(c.accept) == 0 {
+		return typ[0]
+	}
+
+	for _, at := range c.accept {
+		for _, ut := range typ {
+			if at == ut {
+				return ut
+			}
+			if ok, _ := path.Match(at, ut); ok {
+				return ut
+			}
+		}
+	}
+
+	// nothing matched, return typ[0]
+	return typ[0]
 }
