@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"net/http"
 	"runtime/debug"
+	"strconv"
 	"time"
 
 	"github.com/KarpelesLab/pjson"
@@ -193,8 +194,15 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	_, raw := r.ctx.flags["raw"]
 
 	// add standard headers for API respsones (no cache, cors)
-	rw.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-	rw.Header().Set("Expires", time.Now().Add(-365*86400*time.Second).Format(time.RFC1123))
+	if c, ok := r.ctx.extra["cache"].(time.Duration); ok && c > 0 {
+		secs := int64(c / time.Second)
+		rw.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d", secs)) // ,immutable
+		rw.Header().Set("Expires", time.Now().Add(c).Format(time.RFC1123))
+		rw.Header().Set("X-Accel-Expires", strconv.FormatInt(secs, 10))
+	} else {
+		rw.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		rw.Header().Set("Expires", time.Now().Add(-365*86400*time.Second).Format(time.RFC1123))
+	}
 	// access-control-allow-credentials: true
 	// access-control-allow-origin: *
 	rw.Header().Set("Access-Control-Allow-Credentials", "true")

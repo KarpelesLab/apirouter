@@ -14,6 +14,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"time"
 
 	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/pobj"
@@ -270,14 +271,17 @@ func GetParam[T any](ctx context.Context, v string) (T, bool) {
 	return final, err == nil
 }
 
+// GetQuery returns a value from the GET parameters passed to the API
 func (c *Context) GetQuery(v string) any {
 	return c.get[v]
 }
 
+// GetQueryFull returns the whole query string as a map
 func (c *Context) GetQueryFull() map[string]any {
 	return c.get
 }
 
+// GetParamTo assigns the given GET param to an object, converting the type if needed
 func (c *Context) GetParamTo(v string, obj any) error {
 	sv := c.GetParam(v)
 	if sv == nil {
@@ -293,22 +297,32 @@ func (c *Context) SetPath(p string) {
 	c.path = p
 }
 
+// GetPath returns the API path that was requested
 func (c *Context) GetPath() string {
 	return c.path
 }
 
+// SetExtraResponse adds response data to be added in the final response as meta-data, such as for paging, audit trails, etc
 func (c *Context) SetExtraResponse(k string, v any) {
 	c.extra[k] = v
 }
 
+// GetExtraResponse returns the extra response data that was previously set
 func (c *Context) GetExtraResponse(k string) any {
 	return c.extra[k]
 }
 
+// SetCache defines this API call can be cached up to the given time. A negative or zero value will disable caching (default)
+func (c *Context) SetCache(t time.Duration) {
+	c.extra["cache"] = t
+}
+
+// SetFlag sets a flag on the context, and should only be used for very specific cases
 func (c *Context) SetFlag(flag string, val bool) {
 	c.flags[flag] = val
 }
 
+// RemoteAddr returns the remote address that made the request, if any is found
 func (c *Context) RemoteAddr() string {
 	if req := c.req; req != nil {
 		ipp := webutil.ParseIPPort(req.RemoteAddr)
@@ -355,10 +369,12 @@ func GetObject[T any](ctx context.Context, typ string) *T {
 	return nil
 }
 
+// RequestId returns the current request's ID, typically a uuid
 func (c *Context) RequestId() string {
 	return c.reqid
 }
 
+// GetDomain returns the domain on which the request was issued
 func (c *Context) GetDomain() string {
 	// get domain for request
 	if c.req != nil {
