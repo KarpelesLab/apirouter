@@ -128,6 +128,7 @@ func (c *Context) handleWebsocket() {
 			if err != nil {
 				res = subCtx.errorResponse(err)
 			} else {
+				subCtx.SetResponseSink(&websocketSink{ctx: subCtx, wsc: c.wsc, cbor: true})
 				res, _ = subCtx.Response()
 			}
 			buf := &bytes.Buffer{}
@@ -146,6 +147,7 @@ func (c *Context) handleWebsocket() {
 			if err != nil {
 				res = subCtx.errorResponse(err)
 			} else {
+				subCtx.SetResponseSink(&websocketSink{ctx: subCtx, wsc: c.wsc, cbor: false})
 				res, _ = subCtx.Response()
 			}
 			buf := &bytes.Buffer{}

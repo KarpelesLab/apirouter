@@ -16,6 +16,10 @@ import (
 	"github.com/fxamacker/cbor/v2"
 )
 
+type ResponseSink interface {
+	SendResponse(*Response) error
+}
+
 type Response struct {
 	Result       string  `json:"result"` // error|success|redirect
 	Error        string  `json:"error,omitempty"`

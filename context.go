@@ -35,6 +35,7 @@ type Context struct {
 	req    *http.Request       // can be nil
 	rw     http.ResponseWriter // can be nil
 	wsc    *websocket.Conn     // can be nil
+	rsink  ResponseSink        // can be nil
 	params map[string]any      // parameters passed from POST?
 	get    map[string]any      // GET parameters (used for _ctx, etc)
 	flags  map[string]bool     // flags, such as "raw" or "pretty"
@@ -350,6 +351,25 @@ func GetObject[T any](ctx context.Context, typ string) *T {
 		return v
 	}
 	return nil
+}
+
+// SetResponseSink sets the context's response sink used to send intermediate progress reports
+func (c *Context) SetResponseSink(sink ResponseSink) {
+	c.rsink = sink
+}
+
+// Progress sends progress through the context response sink
+func Progress(ctx context.Context, data any) error {
+	var c *Context
+	ctx.Value(&c)
+	if c == nil {
+		return nil
+	}
+	if c.rsink == nil {
+		return nil
+	}
+
+	return c.rsink.SendResponse(c.progressResponse(data))
 }
 
 // RequestId returns the current request's ID, typically a uuid
