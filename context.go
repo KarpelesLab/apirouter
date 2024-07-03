@@ -108,6 +108,26 @@ type childRequest struct {
 	QueryId pjson.RawMessage `json:"query_id"`
 }
 
+func NewBytes(ctx context.Context, req []byte, contentType string) (*Context, error) {
+	var reqid string
+	if r, ok := ctx.Value("request_id").(string); ok && r != "" {
+		reqid = r
+	} else {
+		reqid = uuid.Must(uuid.NewRandom()).String()
+	}
+
+	res := &Context{
+		Context: ctx,
+		objects: make(map[string]any),
+		flags:   make(map[string]bool),
+		extra:   make(map[string]any),
+		reqid:   reqid,
+	}
+
+	err := res.SetBytes(req, contentType)
+	return res, err
+}
+
 // NewChild instanciates a new Context for a given child request. req will be a json
 // object containing: path, verb (default=GET), params,
 func NewChild(parent *Context, req []byte, contentType string) (*Context, error) {
@@ -129,33 +149,8 @@ func NewChild(parent *Context, req []byte, contentType string) (*Context, error)
 		showProt:  parent.showProt,
 	}
 
-	var in *childRequest
-	switch contentType {
-	case "application/cbor":
-		err := cbor.Unmarshal(req, &in)
-		if err != nil {
-			return res, err
-		}
-	case "application/json":
-		fallthrough
-	default:
-		err := pjson.Unmarshal(req, &in)
-		if err != nil {
-			return res, err
-		}
-	}
-
-	if in.Path == "" {
-		return res, errors.New("path is missing")
-	}
-	if in.Verb != "" {
-		res.verb = in.Verb
-	}
-	res.path = in.Path
-	res.params = in.Params
-	res.qid = in.QueryId
-
-	return res, nil
+	err := res.SetBytes(req, contentType)
+	return res, err
 }
 
 func (c *Context) Value(v any) any {
@@ -385,6 +380,7 @@ func (c *Context) GetDomain() string {
 	return "_default"
 }
 
+// SetHttp configures the Context with the given http request and response writer
 func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	c.req = req
 	c.rw = rw
@@ -558,6 +554,36 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 		// fallback to this
 		c.params = c.get
 	}
+	return nil
+}
+
+// SetBytes configures the Context with the given request sent raw with a content type
+func (c *Context) SetBytes(req []byte, contentType string) error {
+	var in *childRequest
+	switch contentType {
+	case "application/cbor":
+		err := cbor.Unmarshal(req, &in)
+		if err != nil {
+			return err
+		}
+	case "application/json":
+		fallthrough
+	default:
+		err := pjson.Unmarshal(req, &in)
+		if err != nil {
+			return err
+		}
+	}
+
+	if in.Path == "" {
+		return errors.New("path is missing")
+	}
+	if in.Verb != "" {
+		c.verb = in.Verb
+	}
+	c.path = in.Path
+	c.params = in.Params
+	c.qid = in.QueryId
 	return nil
 }
 
