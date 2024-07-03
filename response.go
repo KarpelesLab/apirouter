@@ -172,6 +172,14 @@ func (r *Response) getResponseData() any {
 	return res
 }
 
+func (r *Response) MarshalJSON() ([]byte, error) {
+	return pjson.Marshal(r.getResponseData())
+}
+
+func (r *Response) MarshalContextJSON(ctx context.Context) ([]byte, error) {
+	return pjson.MarshalContext(ctx, r.getResponseData())
+}
+
 func (r *Response) GetContext() *Context {
 	return r.ctx
 }
