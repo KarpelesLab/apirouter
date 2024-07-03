@@ -306,6 +306,12 @@ func (c *Context) RemoteAddr() string {
 	return "127.0.0.1"
 }
 
+// SetObject allows setting an object to be associated with the context for this request
+func (c *Context) SetObject(typ string, v any) {
+	c.objects[typ] = v
+}
+
+// GetObject fetches an object associated with the current request
 func (c *Context) GetObject(typ string) any {
 	obj, ok := c.objects[typ]
 	if ok {
@@ -328,6 +334,7 @@ func (c *Context) GetObject(typ string) any {
 	return res
 }
 
+// GetObject fetches an object associated with the context and casts it
 func GetObject[T any](ctx context.Context, typ string) *T {
 	var c *Context
 	ctx.Value(&c)
