@@ -55,10 +55,15 @@ const (
 	MaxMultipartFormLength  = int64(1<<28) + 1  // multipart form max size = 256MB
 )
 
+// New instanciates a new Context with the given path and verb
 func New(ctx context.Context, path, verb string) *Context {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if verb == "" {
+		verb = "GET"
+	}
+
 	var reqid string
 	if r, ok := ctx.Value("request_id").(string); ok && r != "" {
 		reqid = r
@@ -101,52 +106,24 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 	return res, err
 }
 
-type childRequest struct {
-	Path    string           `json:"path" validator:"not_empty"`
-	Verb    string           `json:"verb"`
-	Params  map[string]any   `json:"params"`
-	QueryId pjson.RawMessage `json:"query_id"`
-}
-
-func NewBytes(ctx context.Context, req []byte, contentType string) (*Context, error) {
-	var reqid string
-	if r, ok := ctx.Value("request_id").(string); ok && r != "" {
-		reqid = r
-	} else {
-		reqid = uuid.Must(uuid.NewRandom()).String()
-	}
-
-	res := &Context{
-		Context: ctx,
-		objects: make(map[string]any),
-		flags:   make(map[string]bool),
-		extra:   make(map[string]any),
-		reqid:   reqid,
-	}
-
-	err := res.SetBytes(req, contentType)
-	return res, err
-}
-
 // NewChild instanciates a new Context for a given child request. req will be a json
-// object containing: path, verb (default=GET), params,
+// or cbor object containing: path, verb (default=GET), params
 func NewChild(parent *Context, req []byte, contentType string) (*Context, error) {
 	reqid := uuid.Must(uuid.NewRandom()).String()
 	res := &Context{
-		req:       parent.req,
-		rw:        parent.rw,
-		wsc:       parent.wsc,
-		Context:   parent.Context,
-		verb:      "GET",
-		objects:   make(map[string]any),
-		get:       parent.get,
-		flags:     make(map[string]bool),
-		extra:     make(map[string]any),
-		inputJson: req,
-		reqid:     reqid,
-		user:      parent.user,
-		csrfOk:    parent.csrfOk,
-		showProt:  parent.showProt,
+		req:      parent.req,
+		rw:       parent.rw,
+		wsc:      parent.wsc,
+		Context:  parent.Context,
+		verb:     "GET",
+		objects:  make(map[string]any),
+		get:      parent.get,
+		flags:    make(map[string]bool),
+		extra:    make(map[string]any),
+		reqid:    reqid,
+		user:     parent.user,
+		csrfOk:   parent.csrfOk,
+		showProt: parent.showProt,
 	}
 
 	err := res.SetBytes(req, contentType)
@@ -557,6 +534,13 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
+type childRequest struct {
+	Path    string           `json:"path" validator:"not_empty"`
+	Verb    string           `json:"verb"`
+	Params  map[string]any   `json:"params"`
+	QueryId pjson.RawMessage `json:"query_id"`
+}
+
 // SetBytes configures the Context with the given request sent raw with a content type
 func (c *Context) SetBytes(req []byte, contentType string) error {
 	var in *childRequest
@@ -575,6 +559,23 @@ func (c *Context) SetBytes(req []byte, contentType string) error {
 		}
 	}
 
+	c.inputJson = req
+	return c.setChildRequest(in)
+}
+
+// SetDecoder sets Context value based on a standardized encoded object to be decoded via an object
+// similar to encoding/json.Decoder.
+func (c *Context) SetDecoder(dec interface{ Decode(any) error }) error {
+	var in *childRequest
+	err := dec.Decode(&in)
+	if err != nil {
+		return err
+	}
+
+	return c.setChildRequest(in)
+}
+
+func (c *Context) setChildRequest(in *childRequest) error {
 	if in.Path == "" {
 		return errors.New("path is missing")
 	}
