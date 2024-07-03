@@ -6,7 +6,6 @@ import (
 	"io"
 	"net/http"
 	"sync"
-	"time"
 
 	"github.com/KarpelesLab/pjson"
 	"github.com/fxamacker/cbor/v2"
@@ -127,7 +126,7 @@ func (c *Context) handleWebsocket() {
 			var res *Response
 			subCtx, err := NewChild(c, dat, "application/cbor")
 			if err != nil {
-				res = subCtx.errorResponse(time.Now(), err)
+				res = subCtx.errorResponse(err)
 			} else {
 				res, _ = subCtx.Response()
 			}
@@ -145,7 +144,7 @@ func (c *Context) handleWebsocket() {
 			var res *Response
 			subCtx, err := NewChild(c, dat, "application/json")
 			if err != nil {
-				res = subCtx.errorResponse(time.Now(), err)
+				res = subCtx.errorResponse(err)
 			} else {
 				res, _ = subCtx.Response()
 			}

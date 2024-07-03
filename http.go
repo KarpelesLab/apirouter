@@ -5,7 +5,6 @@ import (
 	"net/http"
 	"net/url"
 	"strings"
-	"time"
 )
 
 // apirouter.HTTP can be used as a handler function, or as a handler
@@ -13,7 +12,7 @@ import (
 func HTTP(rw http.ResponseWriter, req *http.Request) {
 	ctx, err := NewHttp(rw, req)
 	if err != nil {
-		res := ctx.errorResponse(time.Now(), err)
+		res := ctx.errorResponse(err)
 		res.ServeHTTP(rw, req)
 		return
 	}

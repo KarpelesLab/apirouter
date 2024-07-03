@@ -34,7 +34,7 @@ type Response struct {
 	subhandler   http.HandlerFunc
 }
 
-func (c *Context) errorResponse(start time.Time, err error) *Response {
+func (c *Context) errorResponse(err error) *Response {
 	code := webutil.HTTPStatus(err)
 	if code == 0 {
 		code = http.StatusInternalServerError
@@ -44,7 +44,7 @@ func (c *Context) errorResponse(start time.Time, err error) *Response {
 			Result:       "redirect",
 			RedirectURL:  e.URL.String(),
 			RedirectCode: e.Code,
-			Time:         float64(time.Since(start)) / float64(time.Second),
+			Time:         float64(time.Since(c.start)) / float64(time.Second),
 			RequestId:    c.reqid,
 			QueryId:      c.qid,
 			err:          e,
@@ -57,7 +57,7 @@ func (c *Context) errorResponse(start time.Time, err error) *Response {
 		Result:    "error",
 		Error:     err.Error(),
 		Code:      code,
-		Time:      float64(time.Since(start)) / float64(time.Second),
+		Time:      float64(time.Since(c.start)) / float64(time.Second),
 		RequestId: c.reqid,
 		QueryId:   c.qid,
 		err:       err,
@@ -70,8 +70,24 @@ func (c *Context) errorResponse(start time.Time, err error) *Response {
 	return res
 }
 
+func (c *Context) progressResponse(data any) *Response {
+	res := &Response{
+		Result:    "progress",
+		Time:      float64(time.Since(c.start)) / float64(time.Second),
+		RequestId: c.reqid,
+		QueryId:   c.qid,
+		Data:      data,
+		ctx:       c,
+	}
+	for _, h := range ResponseHooks {
+		h(res)
+	}
+
+	return res
+}
+
+// Response executes the request and generates a response object
 func (c *Context) Response() (res *Response, err error) {
-	start := time.Now()
 
 	defer func() {
 		if e := recover(); e != nil {
@@ -83,7 +99,7 @@ func (c *Context) Response() (res *Response, err error) {
 				Error:     fmt.Sprintf("panic: %s", e),
 				Code:      http.StatusInternalServerError,
 				Debug:     string(stack),
-				Time:      float64(time.Since(start)) / float64(time.Second),
+				Time:      float64(time.Since(c.start)) / float64(time.Second),
 				RequestId: c.reqid,
 				QueryId:   c.qid,
 				err:       err,
@@ -94,7 +110,7 @@ func (c *Context) Response() (res *Response, err error) {
 
 	for _, h := range RequestHooks {
 		if err = h(c); err != nil {
-			res = c.errorResponse(start, err)
+			res = c.errorResponse(err)
 			return
 		}
 	}
@@ -104,10 +120,10 @@ func (c *Context) Response() (res *Response, err error) {
 	val, err = c.Call() // perform the actual call
 
 	if err != nil {
-		res = c.errorResponse(start, err)
+		res = c.errorResponse(err)
 		for _, h := range ResponseHooks {
 			if err := h(res); err != nil {
-				return c.errorResponse(start, err), err
+				return c.errorResponse(err), err
 			}
 		}
 		return
@@ -116,7 +132,7 @@ func (c *Context) Response() (res *Response, err error) {
 	if obj, ok := val.(*Response); ok {
 		// already a response object
 		res = obj
-		res.Time = float64(time.Since(start)) / float64(time.Second)
+		res.Time = float64(time.Since(c.start)) / float64(time.Second)
 		for _, h := range ResponseHooks {
 			h(res)
 		}
@@ -126,7 +142,7 @@ func (c *Context) Response() (res *Response, err error) {
 	res = &Response{
 		Result:    "success",
 		Code:      code,
-		Time:      float64(time.Since(start)) / float64(time.Second),
+		Time:      float64(time.Since(c.start)) / float64(time.Second),
 		RequestId: c.reqid,
 		QueryId:   c.qid,
 		Data:      val,

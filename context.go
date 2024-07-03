@@ -40,6 +40,7 @@ type Context struct {
 	flags  map[string]bool     // flags, such as "raw" or "pretty"
 	extra  map[string]any      // extra values in response
 	qid    any                 // client defined query id (optional)
+	start  time.Time
 
 	objects   map[string]any
 	inputJson pjson.RawMessage
@@ -79,6 +80,7 @@ func New(ctx context.Context, path, verb string) *Context {
 		flags:   make(map[string]bool),
 		extra:   make(map[string]any),
 		reqid:   reqid,
+		start:   time.Now(),
 	}
 
 	return res
@@ -100,6 +102,7 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 		flags:   make(map[string]bool),
 		extra:   make(map[string]any),
 		reqid:   reqid,
+		start:   time.Now(),
 	}
 
 	err := res.SetHttp(rw, req)
@@ -124,6 +127,7 @@ func NewChild(parent *Context, req []byte, contentType string) (*Context, error)
 		user:     parent.user,
 		csrfOk:   parent.csrfOk,
 		showProt: parent.showProt,
+		start:    time.Now(),
 	}
 
 	err := res.SetBytes(req, contentType)
