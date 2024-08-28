@@ -20,9 +20,9 @@ import (
 	"github.com/KarpelesLab/pobj"
 	"github.com/KarpelesLab/typutil"
 	"github.com/KarpelesLab/webutil"
+	"github.com/coder/websocket"
 	"github.com/fxamacker/cbor/v2"
 	"github.com/google/uuid"
-	"nhooyr.io/websocket"
 )
 
 type Context struct {

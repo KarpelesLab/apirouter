@@ -31,6 +31,8 @@ github.com/KarpelesLab/webutil v0.1.1 h1:w5iCebZb3kv39M23/VrL9w97oTW6MEwFyW6VnJF
 github.com/KarpelesLab/webutil v0.1.1/go.mod h1:AKTsmoimqwSdJHtZzBnvxcjQv3lgyw/GVJFVyXaDilU=
 github.com/KarpelesLab/webutil v0.2.0 h1:EzCegkQUzTNnnCIxu6sTRgZIE/VbrNBDXUCtYrvFHAA=
 github.com/KarpelesLab/webutil v0.2.0/go.mod h1:AKTsmoimqwSdJHtZzBnvxcjQv3lgyw/GVJFVyXaDilU=
+github.com/coder/websocket v1.8.12 h1:5bUXkEPPIbewrnkU8LTCLVaxi4N4J8ahufH2vlo4NAo=
+github.com/coder/websocket v1.8.12/go.mod h1:LNVeNrXQZfe5qhS9ALED3uA+l5pPqvwXg3CKoDBB2gs=
 github.com/fxamacker/cbor/v2 v2.6.0 h1:sU6J2usfADwWlYDAFhZBQ6TnLFBHxgesMrQfQgk1tWA=
 github.com/fxamacker/cbor/v2 v2.6.0/go.mod h1:pxXPTn3joSm21Gbwsv0w9OSA2y1HFR9qXEeXQVeNoDQ=
 github.com/google/uuid v1.3.0 h1:t6JiXgmwXMjEs8VusXIJk2BXHsn+wx8BZdTaoZ5fu7I=

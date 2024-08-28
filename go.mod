@@ -11,11 +11,11 @@ require (
 )
 
 require (
+	github.com/coder/websocket v1.8.12
 	github.com/fxamacker/cbor/v2 v2.6.0
 	github.com/google/uuid v1.4.0
 	golang.org/x/sys v0.5.0
 	gorm.io/gorm v1.25.11
-	nhooyr.io/websocket v1.8.11
 )
 
 require (

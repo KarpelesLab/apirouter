@@ -5,8 +5,8 @@ import (
 	"context"
 
 	"github.com/KarpelesLab/pjson"
+	"github.com/coder/websocket"
 	"github.com/fxamacker/cbor/v2"
-	"nhooyr.io/websocket"
 )
 
 type EncoderInterface interface {
