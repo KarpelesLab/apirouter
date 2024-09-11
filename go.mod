@@ -25,7 +25,4 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 )
 
-require (
-	github.com/KarpelesLab/typutil v0.2.19
-	golang.org/x/exp v0.0.0-20240909161429-701f63a606c0 // indirect
-)
+require github.com/KarpelesLab/typutil v0.2.19
