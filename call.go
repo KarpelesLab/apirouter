@@ -69,7 +69,13 @@ func (c *Context) Call() (any, error) {
 			continue
 		}
 
-		res, err := get.CallArg(c, struct{ Id string }{Id: s})
+		var res any
+		var err error
+		if get.IsStringArg(0) {
+			res, err = get.CallArg(c, s)
+		} else {
+			res, err = get.CallArg(c, struct{ Id string }{Id: s})
+		}
 		if err != nil {
 			return nil, err
 		}
