@@ -7,9 +7,8 @@ import (
 	"strings"
 )
 
-// apirouter.HTTP can be used as a handler function, or as a handler
-// via http.HandlerFunc(apirouter.HTTP)
-func HTTP(rw http.ResponseWriter, req *http.Request) {
+// apirouter.HTTP can be used both as a handler function, or as a handler.
+var HTTP = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 	ctx, err := NewHttp(rw, req)
 	if err != nil {
 		res := ctx.errorResponse(err)
@@ -18,7 +17,7 @@ func HTTP(rw http.ResponseWriter, req *http.Request) {
 	}
 	res, _ := ctx.Response()
 	res.ServeHTTP(rw, req)
-}
+})
 
 type optionsResponder struct {
 	allowedMethods []string

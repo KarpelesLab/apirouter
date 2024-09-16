@@ -284,6 +284,21 @@ func (c *Context) SetExtraResponse(k string, v any) {
 	c.extra[k] = v
 }
 
+// SetExtraResponse adds response data to be added in the final response as meta-data, such as for paging, audit trails, etc
+//
+// If the context cannot be retrieved this will return false
+func SetExtraResponse(ctx context.Context, k string, v any) bool {
+	var c *Context
+	ctx.Value(&c)
+
+	if c == nil {
+		return false
+	}
+
+	c.SetExtraResponse(k, v)
+	return true
+}
+
 // GetExtraResponse returns the extra response data that was previously set
 func (c *Context) GetExtraResponse(k string) any {
 	return c.extra[k]
