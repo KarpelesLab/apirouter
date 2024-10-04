@@ -14,6 +14,7 @@ import (
 	"path"
 	"reflect"
 	"strings"
+	"sync"
 	"time"
 
 	"github.com/KarpelesLab/pjson"
@@ -45,10 +46,12 @@ type Context struct {
 
 	objects   map[string]any
 	inputJson pjson.RawMessage
-	user      any      // associated user object
-	csrfOk    bool     // is csrf token OK?
-	showProt  bool     // show protected fields?
-	accept    []string // accepted mime types
+	user      any             // associated user object
+	csrfOk    bool            // is csrf token OK?
+	showProt  bool            // show protected fields?
+	accept    []string        // accepted mime types
+	events    map[string]bool // events we receive
+	eventsLk  sync.RWMutex
 }
 
 const (
@@ -735,4 +738,38 @@ func (c *Context) selectAcceptedType(typ ...string) string {
 
 	// nothing matched, return typ[0]
 	return typ[0]
+}
+
+func (c *Context) ListensFor(ev string) bool {
+	if ev == "*" {
+		return true
+	}
+
+	c.eventsLk.RLock()
+	defer c.eventsLk.RUnlock()
+
+	if c.events == nil {
+		return false
+	}
+
+	v, ok := c.events[ev]
+	return v && ok
+}
+
+func (c *Context) SetListen(ev string, listen bool) {
+	c.eventsLk.Lock()
+	defer c.eventsLk.Unlock()
+
+	if c.events == nil {
+		if !listen {
+			return
+		}
+		c.events = make(map[string]bool)
+	}
+
+	if listen {
+		c.events[ev] = true
+	} else {
+		delete(c.events, ev)
+	}
 }

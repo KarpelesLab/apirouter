@@ -1,3 +1,7 @@
+github.com/KarpelesLab/emitter v0.2.1 h1:DlWLjZAa2c9wc02K5f4zHAt0Jv1C1tQgLgT7VbF7yYI=
+github.com/KarpelesLab/emitter v0.2.1/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
+github.com/KarpelesLab/emitter v0.2.2 h1:GZqeqEPmBfnFHnPzipYn0yqQqgufmhPWTMJZOquo8NM=
+github.com/KarpelesLab/emitter v0.2.2/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
 github.com/KarpelesLab/pjson v0.1.9 h1:JVmm61sLRVb+5YkUDacgM1FlB9CTOsCUhEvF+OzUMf0=
 github.com/KarpelesLab/pjson v0.1.9/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/pobj v0.2.0 h1:YgiXaLACLkIAFDzOH7sXB3dKWQbAAYwCC200e2tyFzE=

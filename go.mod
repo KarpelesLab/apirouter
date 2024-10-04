@@ -1,6 +1,6 @@
 module github.com/KarpelesLab/apirouter
 
-go 1.22.0
+go 1.22.2
 
 toolchain go1.23.0
 
@@ -25,4 +25,7 @@ require (
 	golang.org/x/text v0.14.0 // indirect
 )
 
-require github.com/KarpelesLab/typutil v0.2.19
+require (
+	github.com/KarpelesLab/emitter v0.2.2
+	github.com/KarpelesLab/typutil v0.2.19
+)

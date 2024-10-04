@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"sync"
 
+	"github.com/KarpelesLab/emitter"
 	"github.com/KarpelesLab/pjson"
 	"github.com/coder/websocket"
 	"github.com/fxamacker/cbor/v2"
@@ -20,29 +21,7 @@ var (
 // BroadcastWS sends a message to ALL peers connected to the websocket. It should be formatted with
 // at least something similar to: map[string]any{"result": "event", "data": ...}
 func BroadcastWS(ctx context.Context, data any) error {
-	str, err := pjson.MarshalContext(ctx, data)
-	if err != nil {
-		return err
-	}
-	bin, err := cbor.Marshal(data)
-	if err != nil {
-		return err
-	}
-
-	clients := listWsClients()
-	for _, c := range clients {
-		if wsc := c.wsc; wsc != nil {
-			switch c.accept[0] {
-			case "application/cbor":
-				wsc.Write(ctx, websocket.MessageBinary, bin)
-			case "application/json":
-				fallthrough
-			default:
-				wsc.Write(ctx, websocket.MessageText, str)
-			}
-		}
-	}
-	return nil
+	return emitter.Global.Emit(ctx, "broadcast", "*", data)
 }
 
 func listWsClients() []*Context {
@@ -103,10 +82,55 @@ func (c *Context) releaseWsClient() {
 	delete(wsClients, c.reqid)
 }
 
+func (c *Context) wsListen() {
+	// listen for messages on the broadcast system
+	l := emitter.Global.On("broadcast")
+	defer emitter.Global.Off("broadcast", l)
+
+	for {
+		select {
+		case <-c.Done():
+			return
+		case ev := <-l:
+			if len(ev.Args) < 2 {
+				continue
+			}
+			channel, ok := ev.Args[0].(string)
+			if !ok {
+				continue
+			}
+			if c.ListensFor(channel) {
+				switch c.accept[0] {
+				case "application/cbor":
+					bin, err := ev.EncodedArg(1, "cbor", cbor.Marshal)
+					if err != nil {
+						continue
+					}
+					c.wsc.Write(c, websocket.MessageBinary, bin)
+				case "application/json":
+					fallthrough
+				default:
+					str, err := ev.EncodedArg(1, "json", pjson.Marshal)
+					if err != nil {
+						continue
+					}
+					c.wsc.Write(c, websocket.MessageText, str)
+				}
+			}
+		}
+	}
+}
+
 func (c *Context) handleWebsocket() {
 	defer c.wsc.CloseNow()
 	defer c.releaseWsClient()
 	c.registerWsClient()
+
+	var cancel func()
+	c.Context, cancel = context.WithCancel(c.Context)
+	defer cancel()
+
+	go c.wsListen()
 
 	c.wsc.SetReadLimit(128 * 1024)
 
