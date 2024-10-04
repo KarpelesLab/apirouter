@@ -84,7 +84,7 @@ func (c *Context) releaseWsClient() {
 
 func (c *Context) wsListen() {
 	// listen for messages on the broadcast system
-	l := emitter.Global.On("broadcast")
+	l := emitter.Global.OnWithCap("broadcast", 32) // some buffer to avoid dropping events
 	defer emitter.Global.Off("broadcast", l)
 
 	for {
