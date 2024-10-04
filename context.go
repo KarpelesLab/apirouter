@@ -740,7 +740,20 @@ func (c *Context) selectAcceptedType(typ ...string) string {
 	return typ[0]
 }
 
+func (c *Context) goTop() *Context {
+	for {
+		var c2 *Context
+		c.Context.Value(&c2)
+		if c2 == nil {
+			return c
+		}
+		c = c2
+	}
+}
+
 func (c *Context) ListensFor(ev string) bool {
+	c = c.goTop()
+
 	if ev == "*" {
 		return true
 	}
@@ -757,6 +770,8 @@ func (c *Context) ListensFor(ev string) bool {
 }
 
 func (c *Context) SetListen(ev string, listen bool) {
+	c = c.goTop()
+
 	c.eventsLk.Lock()
 	defer c.eventsLk.Unlock()
 
