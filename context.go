@@ -121,7 +121,7 @@ func NewChild(parent *Context, req []byte, contentType string) (*Context, error)
 		req:      parent.req,
 		rw:       parent.rw,
 		wsc:      parent.wsc,
-		Context:  parent.Context,
+		Context:  parent,
 		verb:     "GET",
 		objects:  getPreObjects(parent),
 		get:      parent.get,
