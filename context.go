@@ -225,6 +225,8 @@ func (c *Context) GetParam(v string) any {
 	return res
 }
 
+// GetParam returns the parameter specified, and a boolean representing whether the value could be found and
+// was of the right type
 func GetParam[T any](ctx context.Context, v string) (T, bool) {
 	// use the pointer to nil → elem method to have the typ corresponding to T
 	typ := reflect.TypeOf((*T)(nil)).Elem()
@@ -249,6 +251,37 @@ func GetParam[T any](ctx context.Context, v string) (T, bool) {
 	final := reflect.Zero(typ).Interface().(T)
 	err := typutil.Assign(&final, res)
 	return final, err == nil
+}
+
+// GetParamDefault works the same as GetParam, except def will be returned if the value is not
+// specified or fails to be converted to the needed type.
+func GetParamDefault[T any](ctx context.Context, v string, def T) T {
+	// use the pointer to nil → elem method to have the typ corresponding to T
+	typ := reflect.TypeFor[T]()
+
+	var c *Context
+	ctx.Value(&c)
+
+	if c == nil {
+		return def
+	}
+
+	res := c.GetParam(v)
+	if res == nil {
+		// not found
+		return def
+	}
+	// check if already the right type
+	if rv, ok := res.(T); ok {
+		return rv
+	}
+
+	final := reflect.Zero(typ).Interface().(T)
+	err := typutil.Assign(&final, res)
+	if err != nil {
+		return def
+	}
+	return final
 }
 
 // GetQuery returns a value from the GET parameters passed to the API
