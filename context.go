@@ -13,6 +13,7 @@ import (
 	"net/url"
 	"path"
 	"reflect"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -820,4 +821,21 @@ func (c *Context) SetListen(ev string, listen bool) {
 	} else {
 		delete(c.events, ev)
 	}
+}
+
+func (c *Context) GetListen() []string {
+	c = c.goTop()
+
+	c.eventsLk.RLock()
+	defer c.eventsLk.RUnlock()
+
+	var res []string
+	for k, v := range c.events {
+		if v {
+			res = append(res, k)
+		}
+	}
+	sort.Strings(res)
+
+	return res
 }
