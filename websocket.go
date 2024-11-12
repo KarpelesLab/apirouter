@@ -17,7 +17,7 @@ import (
 var (
 	wsClients   = make(map[string]*Context)
 	wsclientsLk sync.RWMutex
-	wsDataQ     = must(ringslice.New[*emitter.Event](256))
+	wsDataQ     = must(ringslice.New[*emitter.Event](4096))
 )
 
 // BroadcastWS sends a message to ALL peers connected to the websocket. It should be formatted with
