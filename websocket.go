@@ -25,18 +25,18 @@ var (
 func BroadcastWS(ctx context.Context, data any) error {
 	ev := &emitter.Event{
 		Context: ctx,
-		Topic:   "*",
-		Args:    []any{data},
+		Topic:   "broadcast",
+		Args:    []any{"*", data},
 	}
 	_, err := wsDataQ.Append(ev)
 	return err
 }
 
-func SendWS(ctx context.Context, topic string, data any) error {
+func SendWS(ctx context.Context, channel string, data any) error {
 	ev := &emitter.Event{
 		Context: ctx,
-		Topic:   topic,
-		Args:    []any{data},
+		Topic:   "broadcast",
+		Args:    []any{channel, data},
 	}
 	_, err := wsDataQ.Append(ev)
 	return err
