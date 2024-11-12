@@ -25,6 +25,6 @@ require (
 
 require (
 	github.com/KarpelesLab/emitter v0.3.0
-	github.com/KarpelesLab/ringslice v0.1.0
+	github.com/KarpelesLab/ringslice v0.1.1
 	github.com/KarpelesLab/typutil v0.2.27
 )

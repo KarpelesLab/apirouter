@@ -103,7 +103,7 @@ func (c *Context) releaseWsClient() {
 func (c *Context) wsListen() {
 	defer c.wsc.CloseNow()
 
-	r := wsDataQ.BlockingReader()
+	r := wsDataQ.BlockingCurrentReader()
 
 	// listen for messages on the broadcast system
 	for {
