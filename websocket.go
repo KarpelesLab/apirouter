@@ -87,11 +87,32 @@ func (c *Context) wsListen() {
 	l := emitter.Global.OnWithCap("broadcast", 32) // some buffer to avoid dropping events
 	defer emitter.Global.Off("broadcast", l)
 
+	l2 := make(chan *emitter.Event, 128)
+
+	go func() {
+		defer close(l2)
+		defer c.wsc.CloseNow()
+
+		for ev := range l {
+			select {
+			case l2 <- ev:
+				// good
+			default:
+				// l2 is full, drop client for not listening fast enough
+				return
+			}
+		}
+	}()
+
 	for {
 		select {
 		case <-c.Done():
 			return
-		case ev := <-l:
+		case ev, ok := <-l2:
+			if !ok {
+				return
+			}
+
 			if len(ev.Args) < 2 {
 				continue
 			}
