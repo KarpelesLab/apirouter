@@ -9,6 +9,7 @@ import (
 
 	"github.com/KarpelesLab/emitter"
 	"github.com/KarpelesLab/pjson"
+	"github.com/KarpelesLab/ringslice"
 	"github.com/coder/websocket"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -16,12 +17,29 @@ import (
 var (
 	wsClients   = make(map[string]*Context)
 	wsclientsLk sync.RWMutex
+	wsDataQ     = must(ringslice.New[*emitter.Event](256))
 )
 
 // BroadcastWS sends a message to ALL peers connected to the websocket. It should be formatted with
 // at least something similar to: map[string]any{"result": "event", "data": ...}
 func BroadcastWS(ctx context.Context, data any) error {
-	return emitter.Global.Emit(ctx, "broadcast", "*", data)
+	ev := &emitter.Event{
+		Context: ctx,
+		Topic:   "*",
+		Args:    []any{data},
+	}
+	_, err := wsDataQ.Append(ev)
+	return err
+}
+
+func SendWS(ctx context.Context, topic string, data any) error {
+	ev := &emitter.Event{
+		Context: ctx,
+		Topic:   topic,
+		Args:    []any{data},
+	}
+	_, err := wsDataQ.Append(ev)
+	return err
 }
 
 func listWsClients() []*Context {
@@ -83,33 +101,19 @@ func (c *Context) releaseWsClient() {
 }
 
 func (c *Context) wsListen() {
+	defer c.wsc.CloseNow()
+
+	r := wsDataQ.BlockingReader()
+
 	// listen for messages on the broadcast system
-	l := emitter.Global.OnWithCap("broadcast", 32) // some buffer to avoid dropping events
-	defer emitter.Global.Off("broadcast", l)
-
-	l2 := make(chan *emitter.Event, 128)
-
-	go func() {
-		defer close(l2)
-		defer c.wsc.CloseNow()
-
-		for ev := range l {
-			select {
-			case l2 <- ev:
-				// good
-			default:
-				// l2 is full, drop client for not listening fast enough
-				return
-			}
-		}
-	}()
-
 	for {
 		select {
 		case <-c.Done():
 			return
-		case ev, ok := <-l2:
-			if !ok {
+		default:
+			// read from reader
+			ev, err := r.ReadOne()
+			if err != nil {
 				return
 			}
 
