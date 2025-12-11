@@ -2,11 +2,21 @@ package apirouter
 
 import "gorm.io/gorm"
 
-// Paginate applies standard page_no & results_per_page rules on a gorm tx as a scope
+// Paginate returns a GORM scope function that applies pagination to database queries.
+// It reads "page_no" and "results_per_page" from the request parameters.
+//
+// Parameters:
+//   - page_no: The page number (1-indexed, defaults to 1)
+//   - results_per_page: Number of results per page (defaults to resultsPerPage argument, max 100)
+//
+// The resultsPerPage argument sets the default page size when not specified in the request.
+// If resultsPerPage <= 0, it defaults to 25.
+//
+// Example usage:
+//
+//	var users []User
+//	db.Scopes(ctx.Paginate(25)).Find(&users)
 func (ctx *Context) Paginate(resultsPerPage int) func(tx *gorm.DB) *gorm.DB {
-	// This "return a function" process is required by gorm to have this working as a scope
-	//
-	// See: https://gorm.io/docs/scopes.html
 	return func(tx *gorm.DB) *gorm.DB {
 		page, _ := GetParam[int](ctx, "page_no")
 		if page < 1 {

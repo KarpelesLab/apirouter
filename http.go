@@ -7,7 +7,14 @@ import (
 	"strings"
 )
 
-// apirouter.HTTP can be used both as a handler function, or as a handler.
+// HTTP is the main HTTP handler for the API router.
+// It can be used directly as an http.Handler or http.HandlerFunc.
+// The handler parses incoming requests, routes them to the appropriate
+// API endpoint via the pobj framework, and returns JSON or CBOR responses.
+//
+// Example usage:
+//
+//	http.Handle("/_api/", http.StripPrefix("/_api", apirouter.HTTP))
 var HTTP = http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
 	ctx, err := NewHttp(rw, req)
 	if err != nil {
@@ -42,7 +49,10 @@ func (o *optionsResponder) ServeHTTP(rw http.ResponseWriter, req *http.Request) 
 	rw.WriteHeader(http.StatusNoContent)
 }
 
-// GetDomainForRequest will return the domain for a given http.Request, handling cases with redirects
+// GetDomainForRequest returns the domain name for an HTTP request.
+// It checks the Sec-Original-Host header first (for proxy scenarios),
+// then falls back to the Host header, stripping any port number.
+// Returns "_default" if no domain can be determined.
 func GetDomainForRequest(req *http.Request) string {
 	if originalHost := req.Header.Get("Sec-Original-Host"); originalHost != "" {
 		if host, _, _ := net.SplitHostPort(originalHost); host != "" {
@@ -62,9 +72,9 @@ func GetDomainForRequest(req *http.Request) string {
 	return "_default"
 }
 
-// GetPrefixForRequest can be used to obtain the prefix for a given request and will
-// be able to address the local server directly. It'll handle Sec-Original-Host and
-// Sec-Access-Prefix headers
+// GetPrefixForRequest returns a URL that can be used to address the server directly.
+// It constructs the URL from the request's scheme, domain, and any path prefix.
+// It handles Sec-Original-Host and Sec-Access-Prefix headers for proxy scenarios.
 func GetPrefixForRequest(req *http.Request) *url.URL {
 	u := &url.URL{Host: GetDomainForRequest(req)}
 	// determine if we got https

@@ -30,6 +30,9 @@ func (c *Context) getInputJson() pjson.RawMessage {
 	return c.inputJson
 }
 
+// GetInputJSON returns the raw JSON input for the current request.
+// The type parameter T must be a byte slice type (e.g., []byte or json.RawMessage).
+// Returns nil if no context is available or if there is no input data.
 func GetInputJSON[T ~[]byte](ctx context.Context) T {
 	var c *Context
 	ctx.Value(&c)

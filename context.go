@@ -27,6 +27,10 @@ import (
 	"github.com/google/uuid"
 )
 
+// Context represents the context for an API request.
+// It embeds context.Context and provides access to request parameters,
+// user information, response metadata, and WebSocket event subscriptions.
+// Context is safe for concurrent use after initialization.
 type Context struct {
 	context.Context
 
@@ -55,10 +59,16 @@ type Context struct {
 	eventsLk  sync.RWMutex
 }
 
+// Request body size limits for different content types.
 const (
-	MaxJsonDataLength       = int64(10<<20) + 1 // JSON max body size = 10MB
-	MaxUrlEncodedDataLength = int64(1<<20) + 1  // urlencoded max body size = 1MB
-	MaxMultipartFormLength  = int64(1<<28) + 1  // multipart form max size = 256MB
+	// MaxJsonDataLength is the maximum size for JSON request bodies (10MB).
+	MaxJsonDataLength = int64(10<<20) + 1
+
+	// MaxUrlEncodedDataLength is the maximum size for URL-encoded request bodies (1MB).
+	MaxUrlEncodedDataLength = int64(1<<20) + 1
+
+	// MaxMultipartFormLength is the maximum size for multipart form data (256MB).
+	MaxMultipartFormLength = int64(1<<28) + 1
 )
 
 // New instantiates a new Context with the given path and verb
@@ -91,6 +101,9 @@ func New(ctx context.Context, path, verb string) *Context {
 	return res
 }
 
+// NewHttp creates a new Context from an HTTP request.
+// It parses the request body based on Content-Type and extracts parameters.
+// Returns an error if the request body cannot be parsed.
 func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 	var reqid string
 	if r, ok := req.Context().Value("request_id").(string); ok && r != "" {
@@ -139,6 +152,9 @@ func NewChild(parent *Context, req []byte, contentType string) (*Context, error)
 	return res, err
 }
 
+// Value implements context.Context and provides access to context values.
+// It supports type-safe extraction of *Context and *http.Request via double pointers,
+// as well as string keys for "input_json", "http_request", "domain", "user_object", and "request_id".
 func (c *Context) Value(v any) any {
 	switch k := v.(type) {
 	case **Context:
@@ -723,6 +739,8 @@ func (c *Context) NewRequest(target string) (*http.Request, error) {
 	return req, nil
 }
 
+// ServeHTTP implements http.Handler, allowing a Context to be used as an HTTP handler.
+// It executes the request and writes the response.
 func (c *Context) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	res, _ := c.Response()
 	res.ServeHTTP(rw, req)
@@ -784,6 +802,8 @@ func (c *Context) goTop() *Context {
 	}
 }
 
+// ListensFor returns true if this context is subscribed to the given event channel.
+// The special value "*" always returns true (wildcard subscription).
 func (c *Context) ListensFor(ev string) bool {
 	c = c.goTop()
 
@@ -802,6 +822,9 @@ func (c *Context) ListensFor(ev string) bool {
 	return v && ok
 }
 
+// SetListen subscribes or unsubscribes this context from an event channel.
+// When listen is true, the context will receive broadcasts sent to the channel.
+// When listen is false, the subscription is removed.
 func (c *Context) SetListen(ev string, listen bool) {
 	c = c.goTop()
 
@@ -822,6 +845,7 @@ func (c *Context) SetListen(ev string, listen bool) {
 	}
 }
 
+// GetListen returns a sorted list of all event channels this context is subscribed to.
 func (c *Context) GetListen() []string {
 	c = c.goTop()
 

@@ -20,8 +20,12 @@ var (
 	wsDataQ     = must(ringslice.New[*emitter.Event](4096))
 )
 
-// BroadcastWS sends a message to ALL peers connected to the websocket. It should be formatted with
-// at least something similar to: map[string]any{"result": "event", "data": ...}
+// BroadcastWS sends a message to all WebSocket clients subscribed to the "*" (wildcard) channel.
+// The data should typically be a map with "result" and "data" keys, e.g.:
+//
+//	apirouter.BroadcastWS(ctx, map[string]any{"result": "event", "type": "update", "data": payload})
+//
+// Messages are queued in a ring buffer and delivered asynchronously to all connected clients.
 func BroadcastWS(ctx context.Context, data any) error {
 	ev := &emitter.Event{
 		Context: ctx,
@@ -32,6 +36,9 @@ func BroadcastWS(ctx context.Context, data any) error {
 	return err
 }
 
+// SendWS sends a message to all WebSocket clients subscribed to the specified channel.
+// Only clients that have called SetListen(channel, true) will receive the message.
+// The data should typically be a map with "result" and "data" keys.
 func SendWS(ctx context.Context, channel string, data any) error {
 	ev := &emitter.Event{
 		Context: ctx,

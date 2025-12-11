@@ -16,10 +16,16 @@ import (
 	"github.com/fxamacker/cbor/v2"
 )
 
+// ResponseSink is an interface for sending API responses to different backends.
+// Implementations can send responses to HTTP response writers, WebSocket connections,
+// encoders, or any other output destination.
 type ResponseSink interface {
+	// SendResponse sends the response to the underlying backend.
 	SendResponse(*Response) error
 }
 
+// Response represents an API response with metadata and payload.
+// It can represent success, error, redirect, or progress responses.
 type Response struct {
 	Result       string  `json:"result"` // error|success|redirect
 	Error        string  `json:"error,omitempty"`
@@ -192,14 +198,19 @@ func (r *Response) getResponseData() any {
 	return res
 }
 
+// MarshalJSON implements json.Marshaler for Response.
+// It marshals the response data including any extra context data.
 func (r *Response) MarshalJSON() ([]byte, error) {
 	return pjson.Marshal(r.getResponseData())
 }
 
+// MarshalContextJSON marshals the response to JSON with the given context.
+// The context can be used to control field visibility and other marshaling options.
 func (r *Response) MarshalContextJSON(ctx context.Context) ([]byte, error) {
 	return pjson.MarshalContext(ctx, r.getResponseData())
 }
 
+// GetContext returns the Context associated with this response.
 func (r *Response) GetContext() *Context {
 	return r.ctx
 }
@@ -212,6 +223,9 @@ func (r *Response) getJsonCtx() context.Context {
 	return pjson.ContextPublic(r.ctx)
 }
 
+// ServeHTTP implements http.Handler for Response, allowing it to be used directly
+// as an HTTP handler. It writes the response with appropriate headers for CORS,
+// caching, and content negotiation (JSON or CBOR based on Accept header).
 func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	if h := r.subhandler; h != nil {
 		h(rw, req)

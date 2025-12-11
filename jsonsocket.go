@@ -19,8 +19,12 @@ var (
 	jsonClientsLk sync.RWMutex
 )
 
-// BroadcastJson sends a message to ALL peers connected to the json socket. It should be formatted with
-// at least something similar to: map[string]any{"result": "event", "data": ...}
+// BroadcastJson sends a message to all clients connected via JSON UNIX sockets.
+// The data should typically be a map with "result" and "data" keys, e.g.:
+//
+//	apirouter.BroadcastJson(ctx, map[string]any{"result": "event", "type": "update", "data": payload})
+//
+// Messages are sent asynchronously to all connected clients.
 func BroadcastJson(ctx context.Context, data any) error {
 	clients := listJsonClients()
 	for _, c := range clients {
@@ -40,9 +44,14 @@ func listJsonClients() []*jsonclient {
 	return res
 }
 
-// MakeJsonUnixListener creates a UNIX socket at the given path and listen to it, initializing a json socket for each
-// connection.
-// It uses some tricks if socketName is too long, since there is a 104 chars limits on darwin and 108 chars limit on linux
+// MakeJsonUnixListener creates a UNIX socket at the given path and starts listening for connections.
+// Each connection receives a JSON-RPC style interface where clients send requests like:
+//
+//	{"path": "Object:method", "verb": "GET", "params": {...}}
+//
+// The extraObjects map allows injecting additional objects into each request's context.
+// If socketName exceeds platform limits (104 chars on Darwin, 108 on Linux), a symlink
+// workaround is automatically applied.
 func MakeJsonUnixListener(socketName string, extraObjects map[string]any) error {
 	socketName, err := filepath.Abs(socketName)
 	if err != nil {
@@ -100,7 +109,7 @@ func MakeJsonUnixListener(socketName string, extraObjects map[string]any) error 
 	return nil
 }
 
-// listenJsonSocket listens to the given listener and instanciates a socket for each new connection
+// listenJsonSocket listens to the given listener and instantiates a handler for each new connection.
 func listenJsonSocket(l net.Listener, extraObjects map[string]any) {
 	defer l.Close()
 
