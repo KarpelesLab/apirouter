@@ -4,7 +4,7 @@ go 1.23.1
 
 require (
 	github.com/KarpelesLab/pjson v0.1.10
-	github.com/KarpelesLab/pobj v0.2.0
+	github.com/KarpelesLab/pobj v0.2.1
 	github.com/KarpelesLab/webutil v0.2.2
 )
 

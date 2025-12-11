@@ -73,7 +73,7 @@ func (c *Context) prepareWebsocket() (any, error) {
 			}
 			// determine if we should use binary or text protocol
 			typ := c.selectAcceptedType("application/json", "application/cbor")
-			// enfore only 1 accept
+			// enforce only 1 accept
 			c.accept = []string{typ}
 			// switch rw to wsc
 			c.rw = nil

@@ -61,7 +61,7 @@ const (
 	MaxMultipartFormLength  = int64(1<<28) + 1  // multipart form max size = 256MB
 )
 
-// New instanciates a new Context with the given path and verb
+// New instantiates a new Context with the given path and verb
 func New(ctx context.Context, path, verb string) *Context {
 	if ctx == nil {
 		ctx = context.Background()
@@ -114,7 +114,7 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 	return res, err
 }
 
-// NewChild instanciates a new Context for a given child request. req will be a json
+// NewChild instantiates a new Context for a given child request. req will be a json
 // or cbor object containing: path, verb (default=GET), params
 func NewChild(parent *Context, req []byte, contentType string) (*Context, error) {
 	reqid := uuid.Must(uuid.NewRandom()).String()
@@ -304,7 +304,7 @@ func (c *Context) GetParamTo(v string, obj any) error {
 	}
 
 	// perform assign
-	return typutil.Assign(obj, v)
+	return typutil.Assign(obj, sv)
 }
 
 func (c *Context) SetPath(p string) {
@@ -321,9 +321,8 @@ func (c *Context) SetExtraResponse(k string, v any) {
 	c.extra[k] = v
 }
 
-// SetExtraResponse adds response data to be added in the final response as meta-data, such as for paging, audit trails, etc
-//
-// If the context cannot be retrieved this will return false
+// SetExtraResponse adds response data to be added in the final response as meta-data, such as for paging, audit trails, etc.
+// Returns false if the context cannot be retrieved.
 func SetExtraResponse(ctx context.Context, k string, v any) bool {
 	var c *Context
 	ctx.Value(&c)

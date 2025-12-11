@@ -221,7 +221,7 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// check req for HTTP Query flags: raw
 	_, raw := r.ctx.flags["raw"]
 
-	// add standard headers for API respsones (no cache, cors)
+	// add standard headers for API responses (no cache, cors)
 	if c, ok := r.ctx.extra["cache"].(time.Duration); ok && c > 0 {
 		secs := int64(c / time.Second)
 		rw.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d", secs)) // ,immutable

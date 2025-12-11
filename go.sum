@@ -10,6 +10,8 @@ github.com/KarpelesLab/pjson v0.1.10 h1:ZZcRvHj3fjY/fnYQ+Zow9SCZDOGYTkXs/0v0qtOg
 github.com/KarpelesLab/pjson v0.1.10/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/pobj v0.2.0 h1:YgiXaLACLkIAFDzOH7sXB3dKWQbAAYwCC200e2tyFzE=
 github.com/KarpelesLab/pobj v0.2.0/go.mod h1:G03Fhv4ikiKZ82XXYQgFzr0sGOM7xpqGdhC0DRD0mmc=
+github.com/KarpelesLab/pobj v0.2.1 h1:4I31k/rWcip74a2GngCmD30kx1LSNclvfkEN7TlrIj8=
+github.com/KarpelesLab/pobj v0.2.1/go.mod h1:G03Fhv4ikiKZ82XXYQgFzr0sGOM7xpqGdhC0DRD0mmc=
 github.com/KarpelesLab/ringslice v0.1.0 h1:RTty9FHR6K9nzr0il70U951WlVu1pZCKjhV1M2Ln6nw=
 github.com/KarpelesLab/ringslice v0.1.0/go.mod h1:zgkPNTVpFNkUQNPOd9LglWQKSWjUnL+EWJOe3zBO+RU=
 github.com/KarpelesLab/ringslice v0.1.1 h1:qJNai4Tj9KvK7xwCflrUJF3gQreiTYFdro6UUbhiFx0=
