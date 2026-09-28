@@ -39,6 +39,8 @@ var (
 	ErrTeapot = &Error{Message: "A teapot has appeared", Token: "error_teapot", Code: http.StatusTeapot}
 
 	// ErrLengthRequired indicates Content-Length header is required (411).
+	// The HTTP parser no longer returns it (an empty body is accepted); it is
+	// kept for endpoints that need it.
 	ErrLengthRequired = &Error{Message: "Content-Length header is required for this request", Token: "error_length_required", Code: http.StatusLengthRequired}
 
 	// ErrRequestEntityTooLarge indicates the request body exceeds size limits (413).

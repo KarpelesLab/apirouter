@@ -89,7 +89,7 @@ func (c *Context) progressResponse(data any) *Response {
 		Data:      data,
 		ctx:       c,
 	}
-	for _, h := range ResponseHooks {
+	for _, h := range c.responseHooks() {
 		h(res)
 	}
 
@@ -118,7 +118,7 @@ func (c *Context) Response() (res *Response, err error) {
 		}
 	}()
 
-	for _, h := range RequestHooks {
+	for _, h := range c.requestHooks() {
 		if err = h(c); err != nil {
 			res = c.errorResponse(err)
 			return
@@ -131,7 +131,7 @@ func (c *Context) Response() (res *Response, err error) {
 
 	if err != nil {
 		res = c.errorResponse(err)
-		for _, h := range ResponseHooks {
+		for _, h := range c.responseHooks() {
 			if err := h(res); err != nil {
 				return c.errorResponse(err), err
 			}
@@ -142,8 +142,11 @@ func (c *Context) Response() (res *Response, err error) {
 	if obj, ok := val.(*Response); ok {
 		// already a response object
 		res = obj
+		if res.ctx == nil {
+			res.ctx = c
+		}
 		res.Time = float64(time.Since(c.start)) / float64(time.Second)
-		for _, h := range ResponseHooks {
+		for _, h := range c.responseHooks() {
 			h(res)
 		}
 		return
@@ -158,10 +161,33 @@ func (c *Context) Response() (res *Response, err error) {
 		Data:      val,
 		ctx:       c,
 	}
-	for _, h := range ResponseHooks {
+	for _, h := range c.responseHooks() {
 		h(res)
 	}
 	return
+}
+
+// requestHooks returns the global request hooks followed by the ones of the
+// router serving the request.
+func (c *Context) requestHooks() []RequestHook {
+	if c.router == nil || len(c.router.RequestHooks) == 0 {
+		return RequestHooks
+	}
+	return append(append([]RequestHook{}, RequestHooks...), c.router.RequestHooks...)
+}
+
+// responseHooks returns the global response hooks followed by the ones of
+// the router serving the request.
+func (c *Context) responseHooks() []ResponseHook {
+	if c.router == nil || len(c.router.ResponseHooks) == 0 {
+		return ResponseHooks
+	}
+	return append(append([]ResponseHook{}, ResponseHooks...), c.router.ResponseHooks...)
+}
+
+// Err returns the error this response was generated from, if any.
+func (r *Response) Err() error {
+	return r.err
 }
 
 func (r *Response) getResponseData() any {
@@ -193,6 +219,11 @@ func (r *Response) getResponseData() any {
 	}
 	if r.QueryId != nil {
 		res["query_id"] = r.QueryId
+	}
+	if rt := r.ctx.router; rt != nil {
+		for _, h := range rt.EnvelopeHooks {
+			h(r, res)
+		}
 	}
 
 	return res
@@ -234,25 +265,28 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 
 	// check req for HTTP Query flags: raw
 	_, raw := r.ctx.flags["raw"]
+	hdr := rw.Header()
 
 	// add standard headers for API responses (no cache, cors)
 	if c, ok := r.ctx.extra["cache"].(time.Duration); ok && c > 0 {
 		secs := int64(c / time.Second)
-		rw.Header().Set("Cache-Control", fmt.Sprintf("public,max-age=%d", secs)) // ,immutable
-		rw.Header().Set("Expires", time.Now().Add(c).Format(time.RFC1123))
-		rw.Header().Set("X-Accel-Expires", strconv.FormatInt(secs, 10))
+		hdr.Set("Cache-Control", fmt.Sprintf("public,max-age=%d", secs)) // ,immutable
+		hdr.Set("Expires", time.Now().Add(c).Format(time.RFC1123))
+		hdr.Set("X-Accel-Expires", strconv.FormatInt(secs, 10))
 	} else {
-		rw.Header().Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
-		rw.Header().Set("Expires", time.Now().Add(-365*86400*time.Second).Format(time.RFC1123))
+		hdr.Set("Cache-Control", "no-store, no-cache, must-revalidate, max-age=0")
+		hdr.Set("Expires", time.Now().Add(-365*86400*time.Second).Format(time.RFC1123))
 	}
-	// access-control-allow-credentials: true
-	// access-control-allow-origin: *
-	rw.Header().Set("Access-Control-Allow-Credentials", "true")
-	if origin := req.Header.Get("Origin"); origin != "" {
-		rw.Header().Set("Vary", "Accept-Encoding,Origin")
-		rw.Header().Set("Access-Control-Allow-Origin", origin)
-	} else {
-		rw.Header().Set("Access-Control-Allow-Origin", "*")
+	if rt := r.ctx.router; rt == nil || !rt.DisableCORS {
+		// access-control-allow-credentials: true
+		// access-control-allow-origin: *
+		hdr.Set("Access-Control-Allow-Credentials", "true")
+		if origin := req.Header.Get("Origin"); origin != "" {
+			hdr.Set("Vary", "Accept-Encoding,Origin")
+			hdr.Set("Access-Control-Allow-Origin", origin)
+		} else {
+			hdr.Set("Access-Control-Allow-Origin", "*")
+		}
 	}
 	// For OPTIONS we also add (at a higher level):
 	// Access-Control-Allow-Headers: Authorization, Content-Type
@@ -260,17 +294,38 @@ func (r *Response) ServeHTTP(rw http.ResponseWriter, req *http.Request) {
 	// Access-Control-Allow-Methods: POST, GET, OPTIONS, PUT, DELETE, PATCH
 	// Allow: POST, GET, OPTIONS
 
+	// headers set by the endpoint (Context.Header)
+	for k, v := range r.ctx.header {
+		hdr[k] = v
+	}
+
 	if raw {
 		if r.err != nil {
-			webutil.ErrorToHttpHandler(r.err).ServeHTTP(rw, req)
+			var h http.Handler
+			if errors.As(r.err, &h) {
+				// errors that know how to answer (redirects, OPTIONS...)
+				h.ServeHTTP(rw, req)
+				return
+			}
+			// other errors are sent as a normal error response
+			if err := r.writeObject(rw, r.getResponseData()); err != nil {
+				webutil.ErrorToHttpHandler(err).ServeHTTP(rw, req)
+			}
 			return
 		}
 		if mime, ok := r.ctx.extra["mime"].(string); ok {
-			rw.Header().Set("Content-Type", mime)
+			hdr.Set("Content-Type", mime)
 		}
 
 		switch v := r.Data.(type) {
 		case string:
+			if v == "" {
+				rw.WriteHeader(http.StatusNoContent)
+				return
+			}
+			if hdr.Get("Content-Type") == "" {
+				hdr.Set("Content-Type", "text/plain; charset=utf-8")
+			}
 			rw.Write([]byte(v))
 			return
 		case []byte:

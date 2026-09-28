@@ -18,7 +18,7 @@ func (c *Context) Call() (any, error) {
 		return c.prepareWebsocket()
 	}
 
-	r := pobj.Root()
+	r := c.root()
 	m := ""
 	method := false
 	corsReq := c.verb == "OPTIONS"
@@ -86,27 +86,33 @@ func (c *Context) Call() (any, error) {
 
 	// ok we need to return a class
 	if method {
+		pm := r.Method(m)
 		if corsReq {
 			c.flags["raw"] = true
-			return nil, &optionsResponder{[]string{"GET", "POST", "HEAD", "OPTIONS"}}
+			return nil, &optionsResponder{methodVerbs(pm)}
 		}
 		// ok we need to call a static method
 		meth := r.Static(m)
 		if meth == nil {
 			return nil, ErrNotFound
 		}
-		switch c.verb {
-		case "HEAD", "GET", "POST":
-			return meth.CallArg(c, c.params)
-		default:
+		// methods can be called with GET, HEAD and POST unless they define
+		// their own verbs (pobj.Method.SetVerbs)
+		def := c.verb == "HEAD" || c.verb == "GET" || c.verb == "POST"
+		if !pm.AllowsVerb(c.verb, def) {
 			return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 		}
+		return meth.CallArg(c, c.params)
 	}
 
 	if obj != nil {
 		if corsReq {
 			c.flags["raw"] = true
 			return nil, &optionsResponder{[]string{"GET", "HEAD", "OPTIONS", "PATCH", "DELETE"}}
+		}
+		if h, ok := obj.(ObjectHandler); ok {
+			// the object handles all verbs itself
+			return h.ApiHandle(c)
 		}
 		switch c.verb {
 		case "HEAD", "GET": // Fetch (default)
@@ -163,4 +169,26 @@ func (c *Context) Call() (any, error) {
 	default:
 		return nil, webutil.HttpError(http.StatusMethodNotAllowed)
 	}
+}
+
+// methodVerbs returns the verbs allowed for a method, for OPTIONS requests.
+func methodVerbs(pm *pobj.Method) []string {
+	verbs := pm.Verbs()
+	if verbs == nil {
+		return []string{"GET", "POST", "HEAD", "OPTIONS"}
+	}
+	res := make([]string, 0, len(verbs)+2)
+	hasHead := false
+	for _, v := range verbs {
+		if v == "HEAD" {
+			hasHead = true
+		}
+	}
+	for _, v := range verbs {
+		res = append(res, v)
+		if v == "GET" && !hasHead {
+			res = append(res, "HEAD")
+		}
+	}
+	return append(res, "OPTIONS")
 }

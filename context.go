@@ -57,6 +57,8 @@ type Context struct {
 	accept    []string        // accepted mime types
 	events    map[string]bool // events we receive
 	eventsLk  sync.RWMutex
+	router    *Router     // router serving the request, if any
+	header    http.Header // extra HTTP response headers
 }
 
 // Request body size limits for different content types.
@@ -96,6 +98,7 @@ func New(ctx context.Context, path, verb string) *Context {
 		extra:   make(map[string]any),
 		reqid:   reqid,
 		start:   time.Now(),
+		router:  getRouter(ctx),
 	}
 
 	return res
@@ -121,6 +124,7 @@ func NewHttp(rw http.ResponseWriter, req *http.Request) (*Context, error) {
 		extra:   make(map[string]any),
 		reqid:   reqid,
 		start:   time.Now(),
+		router:  getRouter(req.Context()),
 	}
 
 	err := res.SetHttp(rw, req)
@@ -146,6 +150,7 @@ func NewChild(parent *Context, req []byte, contentType string) (*Context, error)
 		csrfOk:   parent.csrfOk,
 		showProt: parent.showProt,
 		start:    time.Now(),
+		router:   parent.router,
 	}
 
 	err := res.SetBytes(req, contentType)
@@ -327,6 +332,23 @@ func (c *Context) SetPath(p string) {
 	c.path = p
 }
 
+// GetVerb returns the request verb (HTTP method) of the request, such as
+// "GET" or "POST".
+func (c *Context) GetVerb() string {
+	return c.verb
+}
+
+// Header returns the header map that will be added to the HTTP response
+// (for example Retry-After or Content-Disposition). Values set here take
+// precedence over the default headers set by apirouter (Cache-Control...).
+// They are ignored on transports other than HTTP.
+func (c *Context) Header() http.Header {
+	if c.header == nil {
+		c.header = make(http.Header)
+	}
+	return c.header
+}
+
 // GetPath returns the API path that was requested
 func (c *Context) GetPath() string {
 	return c.path
@@ -478,18 +500,25 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	}
 
 	switch c.req.Method {
-	case "POST", "PATCH", "PUT":
-		ct, params, err := mime.ParseMediaType(c.req.Header.Get("Content-Type"))
-		if err != nil {
-			return err
-		}
+	case "POST", "PATCH", "PUT", "DELETE":
 		if req.ContentLength == 0 {
-			if _, found := req.Header["Content-Length"]; !found {
-				return ErrLengthRequired
+			if c.req.Method == "DELETE" {
+				// DELETE without a body: parameters come from the query string
+				break
 			}
-			// body is empty, ignore it
+			// body is empty (Content-Length: 0, or no body at all), ignore it
 			// we do not fallback to get _ param because of request method
 			return nil
+		}
+		ctHeader := c.req.Header.Get("Content-Type")
+		if ctHeader == "" {
+			// no content type: the body cannot be parsed into parameters,
+			// but remains available to the endpoint (see GetRequestBody)
+			ctHeader = "application/octet-stream"
+		}
+		ct, params, err := mime.ParseMediaType(ctHeader)
+		if err != nil {
+			return err
 		}
 
 		body := c.req.Body
@@ -599,7 +628,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 					continue
 				}
 
-				p[name] = map[string]any{"filename": filename, "data": b}
+				p[name] = map[string]any{"filename": filename, "data": b, "content_type": part.Header.Get("Content-Type")}
 			}
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter

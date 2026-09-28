@@ -14,3 +14,13 @@ type Updatable interface {
 type Deletable interface {
 	ApiDelete(ctx *Context) error
 }
+
+// ObjectHandler is an interface that objects returned by a Fetch action can
+// implement to handle the requests made on them ("Object/id") with any
+// verb: GET, HEAD, POST, PUT, PATCH and DELETE all call ApiHandle, whose
+// result is returned as the response (the verb is available through
+// ctx.GetVerb()). It takes precedence over Updatable and Deletable, and
+// over returning the object itself on GET.
+type ObjectHandler interface {
+	ApiHandle(ctx *Context) (any, error)
+}

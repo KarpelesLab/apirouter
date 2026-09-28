@@ -102,7 +102,8 @@ func MyHandler(ctx context.Context) (any, error) {
 ### Parameter Sources
 
 - **GET requests**: Query string parameters, or JSON in `_` parameter
-- **POST/PATCH/PUT**: Request body (JSON, CBOR, URL-encoded, or multipart)
+- **POST/PATCH/PUT/DELETE**: Request body (JSON, CBOR, URL-encoded, or multipart); a DELETE without a body takes its parameters from the query string like GET
+- **Multipart files**: `{"filename": ..., "data": []byte, "content_type": ...}`
 - **URL-encoded/Multipart**: Can include JSON in `_` parameter to override
 
 ### Request Size Limits
@@ -112,6 +113,36 @@ func MyHandler(ctx context.Context) (any, error) {
 | JSON | 10 MB |
 | URL-encoded | 1 MB |
 | Multipart | 256 MB |
+
+## Router: separate object trees and per-router hooks
+
+`apirouter.HTTP` routes into the global pobj tree. A `Router` routes into its
+own tree (see `pobj.NewRoot`) and carries its own hooks, so a program can serve
+several APIs (or each test can build a fresh one):
+
+```go
+root := pobj.NewRoot()
+root.RegisterActions("Ticket", &pobj.ObjectActions{Fetch: pobj.Static(fetchTicket)})
+root.RegisterMethod("Ticket:upload", upload).SetVerbs("PUT", "POST")
+
+rt := &apirouter.Router{
+    Root:          root,
+    RequestHooks:  []apirouter.RequestHook{checkSession},
+    EnvelopeHooks: []apirouter.EnvelopeHook{platformEnvelope}, // edit the JSON envelope
+    DisableCORS:   true, // no Access-Control-* headers (cookie-authenticated APIs)
+}
+http.Handle("/_rest/", http.StripPrefix("/_rest", rt))
+```
+
+- Methods accept GET, HEAD and POST unless they declare verbs with
+  `pobj.Method.SetVerbs`.
+- Objects returned by a Fetch action can implement `ObjectHandler`
+  (`ApiHandle(*Context) (any, error)`) to answer every verb on `Object/id`.
+- `Context.Header()` adds HTTP response headers; `Context.GetVerb()` returns
+  the request verb.
+- In raw mode (`?raw` or `SetFlag("raw", true)`), strings are sent as
+  `text/plain` (an empty string as 204 No Content), and errors keep the JSON
+  error envelope unless they are an `http.Handler` (redirects...).
 
 ## Request Hooks
 
