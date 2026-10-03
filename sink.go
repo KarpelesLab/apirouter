@@ -3,8 +3,9 @@ package apirouter
 import (
 	"bytes"
 	"context"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 
-	"github.com/KarpelesLab/pjson"
 	"github.com/coder/websocket"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -47,8 +48,7 @@ func (w *websocketSink) SendResponse(r *Response) error {
 		return w.wsc.Write(w.ctx, websocket.MessageBinary, buf.Bytes())
 	} else {
 		buf := &bytes.Buffer{}
-		enc := pjson.NewEncoderContext(r.getJsonCtx(), buf)
-		err := enc.Encode(r.getResponseData())
+		err := json.MarshalEncode(jsontext.NewEncoder(buf), r.getResponseData(), r.jsonOpts())
 		if err != nil {
 			return err
 		}

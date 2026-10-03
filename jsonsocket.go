@@ -2,7 +2,8 @@ package apirouter
 
 import (
 	"context"
-	"encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"fmt"
 	"log"
 	"math/rand"
@@ -125,7 +126,7 @@ func listenJsonSocket(l net.Listener, extraObjects map[string]any) {
 
 type jsonclient struct {
 	c   net.Conn
-	enc *json.Encoder
+	enc *jsontext.Encoder
 	wlk sync.Mutex // write lock
 	id  uuid.UUID
 }
@@ -134,7 +135,7 @@ func (cl *jsonclient) Encode(obj any) error {
 	cl.wlk.Lock()
 	defer cl.wlk.Unlock()
 
-	return cl.enc.Encode(obj)
+	return json.MarshalEncode(cl.enc, obj)
 }
 
 func (cl *jsonclient) SendResponse(r *Response) error {
@@ -164,6 +165,15 @@ func (cl *jsonclient) deregister() {
 	delete(jsonClients, cl.id)
 }
 
+// jsonDecoder adapts a jsontext.Decoder to the interface expected by SetDecoder
+type jsonDecoder struct {
+	dec *jsontext.Decoder
+}
+
+func (d jsonDecoder) Decode(v any) error {
+	return json.UnmarshalDecode(d.dec, v)
+}
+
 // handleJsonClient is a goroutine that handles one end of the socket pair.
 func handleJsonClient(c net.Conn, extraObjects map[string]any) {
 	defer c.Close()
@@ -176,13 +186,13 @@ func handleJsonClient(c net.Conn, extraObjects map[string]any) {
 
 	cl := &jsonclient{
 		c:   c,
-		enc: json.NewEncoder(c),
+		enc: jsontext.NewEncoder(c),
 		id:  uuid.Must(uuid.NewRandom()),
 	}
 	cl.register()
 	defer cl.deregister()
 
-	dec := json.NewDecoder(c)
+	dec := jsonDecoder{jsontext.NewDecoder(c)}
 
 	for {
 		obj := New(context.Background(), "", "")

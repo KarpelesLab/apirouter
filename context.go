@@ -3,6 +3,9 @@ package apirouter
 import (
 	"bytes"
 	"context"
+	jsonv1 "encoding/json"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -18,7 +21,6 @@ import (
 	"sync"
 	"time"
 
-	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/pobj"
 	"github.com/KarpelesLab/typutil"
 	"github.com/KarpelesLab/webutil"
@@ -50,7 +52,7 @@ type Context struct {
 	start  time.Time
 
 	objects   map[string]any
-	inputJson pjson.RawMessage
+	inputJson jsonv1.RawMessage
 	user      any             // associated user object
 	csrfOk    bool            // is csrf token OK?
 	showProt  bool            // show protected fields?
@@ -544,9 +546,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 				// reject body
 				return ErrRequestEntityTooLarge
 			}
-			dec := pjson.NewDecoder(io.LimitReader(body, MaxJsonDataLength))
-			dec.UseNumber()
-			err := dec.Decode(&c.params)
+			err := json.UnmarshalRead(io.LimitReader(body, MaxJsonDataLength), &c.params, jsonUseNumber)
 			if err != nil {
 				return fmt.Errorf("while reading json request body: %w", err)
 			}
@@ -578,7 +578,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter
 				if v, ok := v.(string); ok {
-					err := pjson.Unmarshal([]byte(v), &c.params)
+					err := json.Unmarshal([]byte(v), &c.params)
 					if err != nil {
 						return fmt.Errorf("while reading json request body: %w", err)
 					}
@@ -633,7 +633,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 			if v, ok := p["_"]; ok {
 				// _ contains json data, and overwrites any other parameter
 				if v, ok := v.(string); ok {
-					err := pjson.Unmarshal([]byte(v), &c.params)
+					err := json.Unmarshal([]byte(v), &c.params)
 					if err != nil {
 						return fmt.Errorf("while reading json request body: %w", err)
 					}
@@ -652,7 +652,7 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	if v, ok := c.get["_"]; ok {
 		// _ contains json data, and overwrites any other parameter
 		if v, ok := v.(string); ok {
-			return pjson.Unmarshal([]byte(v), &c.params)
+			return json.Unmarshal([]byte(v), &c.params)
 		}
 	} else {
 		// fallback to this
@@ -661,11 +661,24 @@ func (c *Context) SetHttp(rw http.ResponseWriter, req *http.Request) error {
 	return nil
 }
 
+// jsonUseNumber makes numbers decoded into any values be returned as json.Number
+var jsonUseNumber = json.WithUnmarshalers(json.UnmarshalFromFunc(func(dec *jsontext.Decoder, v *any) error {
+	if dec.PeekKind() != '0' {
+		return errors.ErrUnsupported
+	}
+	val, err := dec.ReadValue()
+	if err != nil {
+		return err
+	}
+	*v = jsonv1.Number(val)
+	return nil
+}))
+
 type childRequest struct {
-	Path    string           `json:"path" validator:"not_empty"`
-	Verb    string           `json:"verb"`
-	Params  map[string]any   `json:"params"`
-	QueryId pjson.RawMessage `json:"query_id"`
+	Path    string         `json:"path" validator:"not_empty"`
+	Verb    string         `json:"verb"`
+	Params  map[string]any `json:"params"`
+	QueryId jsontext.Value `json:"query_id"`
 }
 
 // SetBytes configures the Context with the given request sent raw with a content type
@@ -680,7 +693,7 @@ func (c *Context) SetBytes(req []byte, contentType string) error {
 	case "application/json":
 		fallthrough
 	default:
-		err := pjson.Unmarshal(req, &in)
+		err := json.Unmarshal(req, &in)
 		if err != nil {
 			return err
 		}
@@ -730,7 +743,7 @@ func (c *Context) NewRequest(target string) (*http.Request, error) {
 	headers := make(http.Header)
 
 	if c.params != nil {
-		js, err := pjson.MarshalContext(c, c.params)
+		js, err := json.Marshal(c.params)
 		if err != nil {
 			return nil, err
 		}

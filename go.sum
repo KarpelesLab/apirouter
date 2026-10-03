@@ -1,13 +1,11 @@
 github.com/KarpelesLab/emitter v0.3.0 h1:Q1ggg/ZTohxiwYhm5H4C9phzq1RPNOi9MmWT5HuTSLQ=
 github.com/KarpelesLab/emitter v0.3.0/go.mod h1:JOaQADpNVN0OJfhkDurRCUkMEotPM8Pukh3DadTOY+4=
-github.com/KarpelesLab/pjson v0.1.10 h1:ZZcRvHj3fjY/fnYQ+Zow9SCZDOGYTkXs/0v0qtOgv3A=
-github.com/KarpelesLab/pjson v0.1.10/go.mod h1:gb4uSTld7I2kO2WvLdat1mN1brsS1hzSR+dWw1hL3iU=
 github.com/KarpelesLab/pobj v0.3.0 h1:HwjI7z361bS0xKGk/KCKrgKPKzqygnMJUjncHAwz4QM=
 github.com/KarpelesLab/pobj v0.3.0/go.mod h1:G03Fhv4ikiKZ82XXYQgFzr0sGOM7xpqGdhC0DRD0mmc=
 github.com/KarpelesLab/ringslice v0.1.1 h1:qJNai4Tj9KvK7xwCflrUJF3gQreiTYFdro6UUbhiFx0=
 github.com/KarpelesLab/ringslice v0.1.1/go.mod h1:zgkPNTVpFNkUQNPOd9LglWQKSWjUnL+EWJOe3zBO+RU=
-github.com/KarpelesLab/typutil v0.2.30 h1:fhd/0J9OHLb3mRsk/KbvdzW9gxvfiA8fRw0DBPxMqKM=
-github.com/KarpelesLab/typutil v0.2.30/go.mod h1:D40zw2FqfQwMnczl1uaXRK0dsUAO/isDElTkAJWfQb4=
+github.com/KarpelesLab/typutil v0.3.0 h1:MFzVQmBUJha/sICYnERGz0wKKHp1+ovNIRmig1fdc24=
+github.com/KarpelesLab/typutil v0.3.0/go.mod h1:VyVrSJoOBybuqr2eSE5rAEfPnZZS/UHDGhxv7B3F4JI=
 github.com/KarpelesLab/webutil v0.2.2 h1:FsUwiLAjMDZj9zaSL4hzg2SWgJa9tQzM1A1w15RAGHw=
 github.com/KarpelesLab/webutil v0.2.2/go.mod h1:AKTsmoimqwSdJHtZzBnvxcjQv3lgyw/GVJFVyXaDilU=
 github.com/coder/websocket v1.8.12 h1:5bUXkEPPIbewrnkU8LTCLVaxi4N4J8ahufH2vlo4NAo=

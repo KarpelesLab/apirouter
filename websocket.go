@@ -3,12 +3,13 @@ package apirouter
 import (
 	"bytes"
 	"context"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"io"
 	"net/http"
 	"sync"
 
 	"github.com/KarpelesLab/emitter"
-	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/ringslice"
 	"github.com/coder/websocket"
 	"github.com/fxamacker/cbor/v2"
@@ -142,7 +143,7 @@ func (c *Context) wsListen() {
 				case "application/json":
 					fallthrough
 				default:
-					str, err := ev.EncodedArg(1, "json", pjson.Marshal)
+					str, err := ev.EncodedArg(1, "json", func(v any) ([]byte, error) { return json.Marshal(v) })
 					if err != nil {
 						continue
 					}
@@ -207,8 +208,7 @@ func (c *Context) handleWebsocket() {
 				res, _ = subCtx.Response()
 			}
 			buf := &bytes.Buffer{}
-			enc := pjson.NewEncoderContext(res.getJsonCtx(), buf)
-			err = enc.Encode(res.getResponseData())
+			err = json.MarshalEncode(jsontext.NewEncoder(buf), res.getResponseData(), res.jsonOpts())
 			if err != nil {
 				// no really
 				c.wsc.Close(websocket.StatusInvalidFramePayloadData, err.Error())

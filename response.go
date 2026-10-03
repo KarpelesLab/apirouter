@@ -1,7 +1,8 @@
 package apirouter
 
 import (
-	"context"
+	"encoding/json/jsontext"
+	"encoding/json/v2"
 	"errors"
 	"fmt"
 	"io"
@@ -11,7 +12,6 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/KarpelesLab/pjson"
 	"github.com/KarpelesLab/webutil"
 	"github.com/fxamacker/cbor/v2"
 )
@@ -232,13 +232,7 @@ func (r *Response) getResponseData() any {
 // MarshalJSON implements json.Marshaler for Response.
 // It marshals the response data including any extra context data.
 func (r *Response) MarshalJSON() ([]byte, error) {
-	return pjson.Marshal(r.getResponseData())
-}
-
-// MarshalContextJSON marshals the response to JSON with the given context.
-// The context can be used to control field visibility and other marshaling options.
-func (r *Response) MarshalContextJSON(ctx context.Context) ([]byte, error) {
-	return pjson.MarshalContext(ctx, r.getResponseData())
+	return json.Marshal(r.getResponseData())
 }
 
 // GetContext returns the Context associated with this response.
@@ -246,12 +240,13 @@ func (r *Response) GetContext() *Context {
 	return r.ctx
 }
 
-// getJsonCtx returns a context to pass to MarshalContext that may hide some values
-func (r *Response) getJsonCtx() context.Context {
+// jsonOpts returns the json options to use when marshaling this response, which
+// hide protected fields unless the context allows showing them
+func (r *Response) jsonOpts() json.Options {
 	if r.ctx.showProt {
-		return r.ctx
+		return json.JoinOptions()
 	}
-	return pjson.ContextPublic(r.ctx)
+	return publicJsonOpts
 }
 
 // ServeHTTP implements http.Handler for Response, allowing it to be used directly
@@ -367,11 +362,11 @@ func (r *Response) writeObject(rw http.ResponseWriter, obj any) error {
 		if r.Code != 0 {
 			rw.WriteHeader(r.Code)
 		}
-		enc := pjson.NewEncoderContext(r.getJsonCtx(), rw)
+		opts := []json.Options{r.jsonOpts()}
 		if pretty {
-			enc.SetIndent("", "    ")
+			opts = append(opts, jsontext.WithIndent("    "))
 		}
-		return enc.Encode(obj)
+		return json.MarshalEncode(jsontext.NewEncoder(rw, opts...), obj)
 	case "application/cbor":
 		rw.Header().Set("Content-Type", "application/cbor")
 		if r.Code != 0 {

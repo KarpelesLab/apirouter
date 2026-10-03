@@ -1,13 +1,15 @@
 package apirouter
 
 import (
-	"bytes"
 	"context"
 
-	"github.com/KarpelesLab/pjson"
+	jsonv1 "encoding/json"
+	"encoding/json/v2"
 )
 
-func (c *Context) getInputJson() pjson.RawMessage {
+// getInputJson returns the request input as json. It is returned as an encoding/json
+// RawMessage as this is the type typutil expects for "input_json".
+func (c *Context) getInputJson() jsonv1.RawMessage {
 	if c.inputJson != nil {
 		if len(c.inputJson) == 0 {
 			return nil
@@ -17,13 +19,11 @@ func (c *Context) getInputJson() pjson.RawMessage {
 	if c.params == nil {
 		return nil
 	}
-	buf := &bytes.Buffer{}
-	enc := pjson.NewEncoderContext(c, buf)
-	err := enc.Encode(c.params)
+	buf, err := json.Marshal(c.params)
 	if err != nil {
 		return nil
 	}
-	c.inputJson = buf.Bytes()
+	c.inputJson = buf
 	if len(c.inputJson) == 0 {
 		return nil
 	}

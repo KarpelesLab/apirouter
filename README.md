@@ -14,7 +14,7 @@ A Go package providing a sophisticated REST/RPC API routing framework with suppo
 - **WebSocket Broadcasting**: Real-time event distribution with channel subscriptions
 - **GORM Integration**: Built-in pagination scope for database queries
 - **CORS Support**: Automatic CORS header handling
-- **Protected Fields**: Context-aware JSON marshaling to hide sensitive fields
+- **Protected Fields**: Fields tagged `json:"name,protect"` are hidden unless `SetShowProtectedFields(true)` is set
 
 ## Installation
 
@@ -400,7 +400,6 @@ ctx.Value("request_id")    // Request UUID
 ## Dependencies
 
 - [github.com/KarpelesLab/pobj](https://github.com/KarpelesLab/pobj) - Object registry and method dispatch
-- [github.com/KarpelesLab/pjson](https://github.com/KarpelesLab/pjson) - Context-aware JSON encoding
 - [github.com/KarpelesLab/webutil](https://github.com/KarpelesLab/webutil) - HTTP utilities
 - [github.com/coder/websocket](https://github.com/coder/websocket) - WebSocket implementation
 - [github.com/fxamacker/cbor/v2](https://github.com/fxamacker/cbor/v2) - CBOR encoding
